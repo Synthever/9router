@@ -1,6 +1,6 @@
 services:
   9router:
-    image: decolua/9router:latest
+    build: .
     container_name: 9router
     restart: always
     ports:
