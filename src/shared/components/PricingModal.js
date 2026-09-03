@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getDefaultPricing, formatCost } from "open-sse/providers/pricing.js";
+import { Button } from "@/shared/components";
 
 export default function PricingModal({ isOpen, onClose, onSave }) {
   const [pricingData, setPricingData] = useState({});
@@ -22,7 +23,6 @@ export default function PricingModal({ isOpen, onClose, onSave }) {
         const data = await response.json();
         setPricingData(data);
       } else {
-        // Fallback to defaults
         const defaults = getDefaultPricing();
         setPricingData(defaults);
       }
@@ -89,117 +89,105 @@ export default function PricingModal({ isOpen, onClose, onSave }) {
 
   if (!isOpen) return null;
 
-  // Get all unique providers and models for display
   const allProviders = Object.keys(pricingData).sort();
   const pricingFields = ["input", "output", "cached", "reasoning", "cache_creation"];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-bg-base border border-border rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-surface border-2 border-border rounded-lg shadow-[6px_6px_0px_var(--color-border)] max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col text-text-main">
         {/* Header */}
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Pricing Configuration</h2>
+        <div className="p-4 border-b-2 border-border bg-surface-2 flex items-center justify-between">
+          <h2 className="text-lg font-black tracking-tight">Pricing Configuration</h2>
           <button
             onClick={onClose}
-            className="text-text-muted hover:text-text text-2xl leading-none"
+            className="p-1 rounded border-2 border-border bg-surface hover:bg-danger hover:text-white transition-colors"
           >
-            ×
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-6 space-y-6">
           {loading ? (
-            <div className="text-center py-8 text-text-muted">Loading pricing data...</div>
+            <div className="text-center py-8 text-text-muted font-bold">Loading pricing data...</div>
           ) : (
-            <div className="space-y-6">
+            <>
               {/* Instructions */}
-              <div className="bg-bg-subtle border border-border rounded-lg p-3 text-sm">
-                <p className="font-medium mb-1">Pricing Rates Format</p>
+              <div className="bg-surface-2 border-2 border-border rounded p-3 text-sm shadow-[2px_2px_0px_var(--color-border)]">
+                <p className="font-bold text-text-main mb-1">Pricing Rates Format</p>
                 <p className="text-text-muted">
                   All rates are in <strong>dollars per million tokens</strong> ($/1M tokens).
-                  Example: Input rate of 2.50 means $2.50 per 1,000,000 input tokens.
                 </p>
               </div>
 
-              {/* Pricing Tables */}
-              {allProviders.map(provider => {
-                const models = Object.keys(pricingData[provider]).sort();
-                return (
-                  <div key={provider} className="border border-border rounded-lg overflow-hidden">
-                    <div className="bg-bg-subtle px-4 py-2 font-semibold text-sm">
-                      {provider.toUpperCase()}
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-bg-hover text-text-muted uppercase text-xs">
-                          <tr>
-                            <th className="px-3 py-2 text-left">Model</th>
-                            <th className="px-3 py-2 text-right">Input</th>
-                            <th className="px-3 py-2 text-right">Output</th>
-                            <th className="px-3 py-2 text-right">Cached</th>
-                            <th className="px-3 py-2 text-right">Reasoning</th>
-                            <th className="px-3 py-2 text-right">Cache Creation</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {models.map(model => (
-                            <tr key={model} className="hover:bg-bg-subtle/50">
-                              <td className="px-3 py-2 font-medium">{model}</td>
-                              {pricingFields.map(field => (
-                                <td key={field} className="px-3 py-2">
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={pricingData[provider][model][field] || 0}
-                                    onChange={(e) => handlePricingChange(provider, model, field, e.target.value)}
-                                    className="w-20 px-2 py-1 text-right bg-bg-base border border-border rounded focus:outline-none focus:border-primary"
-                                  />
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
+              {/* Table per provider */}
+              <div className="space-y-6">
+                {allProviders.map(provider => {
+                  const models = Object.keys(pricingData[provider] || {}).sort();
+                  if (models.length === 0) return null;
 
-              {allProviders.length === 0 && (
-                <div className="text-center py-8 text-text-muted">
-                  No pricing data available
-                </div>
-              )}
-            </div>
+                  return (
+                    <div key={provider} className="border-2 border-border rounded bg-surface overflow-hidden shadow-[3px_3px_0px_var(--color-border)]">
+                      <div className="p-3 bg-surface-2 border-b-2 border-border font-black text-sm uppercase tracking-wider text-text-main">
+                        {provider}
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="border-b-2 border-border bg-surface-3 font-bold text-text-main">
+                            <tr>
+                              <th className="p-2.5 border-r border-border">Model</th>
+                              <th className="p-2.5 border-r border-border">Input ($/1M)</th>
+                              <th className="p-2.5 border-r border-border">Output ($/1M)</th>
+                              <th className="p-2.5 border-r border-border">Cached ($/1M)</th>
+                              <th className="p-2.5 border-r border-border">Reasoning ($/1M)</th>
+                              <th className="p-2.5">Cache Creation ($/1M)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {models.map(model => {
+                              const rates = pricingData[provider][model] || {};
+                              return (
+                                <tr key={model} className="border-b border-border/50 hover:bg-surface-2/60">
+                                  <td className="p-2.5 font-mono font-bold text-brand-500 border-r border-border">{model}</td>
+                                  {pricingFields.map(field => (
+                                    <td key={field} className="p-1.5 border-r border-border last:border-r-0">
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={rates[field] ?? ""}
+                                        onChange={(e) => handlePricingChange(provider, model, field, e.target.value)}
+                                        placeholder="0"
+                                        className="w-full p-1.5 font-mono text-xs border border-border rounded bg-surface focus:border-brand-500 focus:outline-none"
+                                      />
+                                    </td>
+                                  ))}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border flex items-center justify-between gap-2">
-          <button
-            onClick={handleReset}
-            className="px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded border border-red-500/20 transition-colors"
-            disabled={saving}
-          >
+        <div className="p-4 border-t-2 border-border bg-surface-2 flex items-center justify-between">
+          <Button variant="danger" size="sm" onClick={handleReset}>
             Reset to Defaults
-          </button>
+          </Button>
           <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-text-muted hover:text-text border border-border rounded transition-colors"
-              disabled={saving}
-            >
+            <Button variant="outline" size="sm" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors disabled:opacity-50"
-              disabled={saving}
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleSave} loading={saving}>
+              Save Changes
+            </Button>
           </div>
         </div>
       </div>

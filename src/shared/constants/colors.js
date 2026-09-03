@@ -1,52 +1,64 @@
-// Claude-inspired color palette for Endpoint Proxy
-// Light theme: Warm beige/cream tones
-// Dark theme: Deep charcoal/brown tones
+// Exact Claude (Anthropic) palette mapped from DESIGN-claude.md into Neo-Brutalism tokens
 
 export const COLORS = {
-  // Primary - Warm Coral/Terracotta (Claude-like)
+  // Primary - Warm Coral (Anthropic signature)
   primary: {
-    DEFAULT: "#D97757",
-    hover: "#C56243",
-    light: "#E8A58C",
-    dark: "#B0664D",
+    DEFAULT: "#cc785c",
+    hover: "#b8674c",
+    active: "#a9583e",
+    disabled: "#e6dfd8",
   },
 
-  // Light theme backgrounds
+  // Light theme: Tinted cream canvas (#faf9f5), warm cream surfaces (#efe9de, #f5f0e8), ink text & borders (#141413)
   light: {
-    bg: "#FBF9F6",
-    bgAlt: "#F5F1ED",
-    surface: "#FFFFFF",
-    sidebar: "rgba(246, 246, 246, 0.8)",
-    border: "rgba(0, 0, 0, 0.1)",
-    textMain: "#383733",
-    textMuted: "#75736E",
+    bg: "#faf9f5",
+    bgAlt: "#f5f0e8",
+    surface: "#ffffff",
+    surfaceCard: "#efe9de",
+    surface2: "#efe9de",
+    surface3: "#e8e0d2",
+    sidebar: "#f5f0e8",
+    border: "#141413",
+    borderSubtle: "#e6dfd8",
+    borderHairline: "#e6dfd8",
+    textMain: "#141413",
+    textBody: "#3d3d3a",
+    textMuted: "#6c6a64",
+    textSubtle: "#8e8b82",
   },
 
-  // Dark theme backgrounds
+  // Dark theme: Dark product surfaces (#181715, #1f1e1b, #252320), light on-dark text (#faf9f5, #a09d96)
   dark: {
-    bg: "#191918",
-    bgAlt: "#1F1F1E",
-    surface: "#242423",
-    sidebar: "rgba(30, 30, 30, 0.8)",
-    border: "rgba(255, 255, 255, 0.1)",
-    textMain: "#ECEBE8",
-    textMuted: "#9E9D99",
+    bg: "#181715",
+    bgAlt: "#1f1e1b",
+    surface: "#252320",
+    surfaceCard: "#252320",
+    surface2: "#2d2a26",
+    surface3: "#383530",
+    sidebar: "#1f1e1b",
+    border: "#3d3a35",
+    borderSubtle: "#2d2a26",
+    borderHairline: "#383530",
+    textMain: "#faf9f5",
+    textBody: "#e6dfd8",
+    textMuted: "#a09d96",
+    textSubtle: "#8e8b82",
   },
 
-  // Status colors
+  // Accents & Semantic status from DESIGN-claude.md
+  accent: {
+    teal: "#5db8a6",
+    amber: "#e8a55a",
+  },
   status: {
-    success: "#22C55E",
-    successLight: "#DCFCE7",
-    successDark: "#166534",
-    warning: "#F59E0B",
-    warningLight: "#FEF3C7",
-    warningDark: "#92400E",
-    error: "#EF4444",
-    errorLight: "#FEE2E2",
-    errorDark: "#991B1B",
-    info: "#3B82F6",
-    infoLight: "#DBEAFE",
-    infoDark: "#1E40AF",
+    success: "#5db872",
+    successLight: "#eaf7ed",
+    warning: "#d4a017",
+    warningLight: "#fbf6e8",
+    error: "#c64545",
+    errorLight: "#faecec",
+    info: "#5db8a6",
+    infoLight: "#eaf7f5",
   },
 };
 
@@ -55,22 +67,30 @@ export const CSS_VARIABLES = {
   light: {
     "--color-primary": COLORS.primary.DEFAULT,
     "--color-primary-hover": COLORS.primary.hover,
+    "--color-primary-active": COLORS.primary.active,
     "--color-bg": COLORS.light.bg,
     "--color-bg-alt": COLORS.light.bgAlt,
     "--color-surface": COLORS.light.surface,
+    "--color-surface-2": COLORS.light.surface2,
+    "--color-surface-3": COLORS.light.surface3,
     "--color-sidebar": COLORS.light.sidebar,
     "--color-border": COLORS.light.border,
+    "--color-border-subtle": COLORS.light.borderSubtle,
     "--color-text-main": COLORS.light.textMain,
     "--color-text-muted": COLORS.light.textMuted,
   },
   dark: {
     "--color-primary": COLORS.primary.DEFAULT,
     "--color-primary-hover": COLORS.primary.hover,
+    "--color-primary-active": COLORS.primary.active,
     "--color-bg": COLORS.dark.bg,
     "--color-bg-alt": COLORS.dark.bgAlt,
     "--color-surface": COLORS.dark.surface,
+    "--color-surface-2": COLORS.dark.surface2,
+    "--color-surface-3": COLORS.dark.surface3,
     "--color-sidebar": COLORS.dark.sidebar,
     "--color-border": COLORS.dark.border,
+    "--color-border-subtle": COLORS.dark.borderSubtle,
     "--color-text-main": COLORS.dark.textMain,
     "--color-text-muted": COLORS.dark.textMuted,
   },

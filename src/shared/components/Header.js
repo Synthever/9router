@@ -18,7 +18,6 @@ import { translate } from "@/i18n/runtime";
 const getPageInfo = (pathname) => {
   if (!pathname) return { title: "", description: "", breadcrumbs: [] };
 
-  // Media provider detail: /dashboard/media-providers/[kind]/[id]
   const mediaDetailMatch = pathname.match(/\/media-providers\/([^/]+)\/([^/]+)$/);
   if (mediaDetailMatch) {
     const kindId = mediaDetailMatch[1];
@@ -36,7 +35,6 @@ const getPageInfo = (pathname) => {
     };
   }
 
-  // Media provider kind: /dashboard/media-providers/[kind]
   const mediaKindMatch = pathname.match(/\/media-providers\/([^/]+)$/);
   if (mediaKindMatch) {
     const kindId = mediaKindMatch[1];
@@ -49,7 +47,6 @@ const getPageInfo = (pathname) => {
     };
   }
 
-  // Provider detail page: /dashboard/providers/[id]
   const providerMatch = pathname.match(/\/providers\/([^/]+)$/);
   if (providerMatch) {
     const providerId = providerMatch[1];
@@ -185,7 +182,6 @@ export default function Header({ onMenuClick, showMenuButton = true }) {
   const [loginMethod, setLoginMethod] = useState("");
   const [donateOpen, setDonateOpen] = useState(false);
 
-  // Memoize page info to prevent unnecessary recalculations
   const pageInfo = useMemo(() => getPageInfo(pathname), [pathname]);
   const { title, description, icon, breadcrumbs } = pageInfo;
 
@@ -227,143 +223,57 @@ export default function Header({ onMenuClick, showMenuButton = true }) {
   };
 
   return (
-    <header className="shrink-0 flex items-center justify-between gap-3 px-4 lg:px-8 pt-3 pb-2 border-b border-border-subtle bg-surface/60 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none z-20">
+    <header className="shrink-0 flex items-center justify-between gap-3 px-4 lg:px-8 py-3 border-b-2 border-border bg-surface text-text-main z-20">
       {/* Mobile menu button */}
       <div className="flex items-center gap-3 lg:hidden shrink-0">
         {showMenuButton && (
           <button
             onClick={onMenuClick}
-            className="text-text-main hover:text-primary transition-colors"
+            className="p-1 rounded border-2 border-border bg-surface-2 text-text-main hover:bg-brand-500 hover:text-white transition-colors"
           >
-            <span className="material-symbols-outlined">menu</span>
+            <span className="material-symbols-outlined text-[20px]">menu</span>
           </button>
         )}
       </div>
 
-      {/* Page title with breadcrumbs */}
-      <div className="flex flex-col min-w-0 flex-1">
-        {breadcrumbs.length > 0 ? (
-          <div className="flex items-center gap-2">
-            {breadcrumbs.map((crumb, index) => (
-              <div
-                key={`${crumb.label}-${crumb.href || "current"}`}
-                className="flex items-center gap-2"
-              >
-                {index > 0 && (
-                  <span className="material-symbols-outlined text-text-muted text-base">
-                    chevron_right
-                  </span>
-                )}
-                {crumb.href ? (
-                  <Link
-                    href={crumb.href}
-                    className="text-text-muted hover:text-primary transition-colors"
-                  >
-                    {crumb.label}
-                  </Link>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    {crumb.image && (
-                      <ProviderIcon
-                        src={crumb.image}
-                        alt={crumb.label}
-                        size={28}
-                        className="object-contain rounded max-w-[28px] max-h-[28px]"
-                        fallbackText={crumb.label.slice(0, 2).toUpperCase()}
-                      />
-                    )}
-                    <h1 className="text-base lg:text-2xl font-semibold text-text-main tracking-tight truncate">
-                      {translate(crumb.label)}
-                    </h1>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : title ? (
-          <div>
-            <div className="flex items-center gap-2">
-              {icon && (
-                <span className="material-symbols-outlined text-primary text-xl lg:text-2xl">
-                  {icon}
-                </span>
-              )}
-              <h1 className="text-base lg:text-2xl font-semibold tracking-tight truncate">
-                {translate(title)}
-              </h1>
-            </div>
-            {description && (
-              <p className="hidden lg:block text-sm text-text-muted truncate">
-                {translate(description)}
-              </p>
-            )}
-          </div>
-        ) : null}
-      </div>
-
-      {/* Right actions */}
-      <div className="flex items-center gap-1 shrink-0">
-        {displayName && (loginMethod === "OIDC" || loginMethod === "SAML") && (
-          <div
-            className="hidden sm:flex items-center max-w-[220px] px-3 py-1.5 rounded-full border border-border bg-surface/70 text-xs text-text-muted truncate"
-            title={displayName}
-          >
-            <span className="material-symbols-outlined text-[14px] mr-1.5 text-primary">person</span>
-            <span className="truncate">{displayName}</span>
-            <span className="ml-2 shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-              {loginMethod}
-            </span>
+      {/* Page Title & Breadcrumbs */}
+      <div className="flex-1 min-w-0 flex items-center gap-3">
+        {icon && (
+          <div className="hidden sm:flex p-1.5 rounded border-2 border-border bg-surface-2 shadow-[2px_2px_0px_var(--color-border)]">
+            <span className="material-symbols-outlined text-brand-500 text-[20px]">{icon}</span>
           </div>
         )}
-        <HeaderSearch />
-        <button
-          onClick={() => setDonateOpen(true)}
-          className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-pink-500/30 bg-pink-500/10 text-pink-600 dark:text-pink-400 hover:bg-pink-500/20 transition-colors text-sm font-medium"
-          aria-label="Donate"
-        >
-          <span className="material-symbols-outlined text-[18px]">volunteer_activism</span>
-          <span className="hidden sm:inline">Donate</span>
-        </button>
+        <div className="min-w-0">
+          <h1 className="text-lg font-black tracking-tight text-text-main truncate">
+            {title}
+          </h1>
+          {description && (
+            <p className="text-xs text-text-muted hidden md:block truncate">
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
         <ThemeToggle />
         <HeaderLanguage />
-        <HeaderMenu onLogout={handleLogout} />
-      </div>
-      <DonateModal isOpen={donateOpen} onClose={() => setDonateOpen(false)} />
-    </header>
-  );
-}
-
-function HeaderSearch() {
-  const visible = useHeaderSearchStore((s) => s.visible);
-  const query = useHeaderSearchStore((s) => s.query);
-  const placeholder = useHeaderSearchStore((s) => s.placeholder);
-  const setQuery = useHeaderSearchStore((s) => s.setQuery);
-
-  if (!visible) return null;
-
-  return (
-    <div className="relative w-[160px] sm:w-[220px]">
-      <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-text-muted text-[16px] pointer-events-none">
-        search
-      </span>
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder}
-        className="w-full h-8 pl-7 pr-7 rounded-lg border border-border bg-surface/60 text-sm focus:outline-none focus:border-primary/50 transition-colors"
-      />
-      {query && (
+        {displayName && (
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded border-2 border-border bg-surface-2 shadow-[1px_1px_0px_var(--color-border)] text-xs font-bold">
+            <span className="material-symbols-outlined text-[16px] text-brand-500">account_circle</span>
+            <span className="truncate max-w-[120px]">{displayName}</span>
+          </div>
+        )}
         <button
-          type="button"
-          onClick={() => setQuery("")}
-          className="absolute right-1 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main p-0.5 rounded"
-          aria-label="Clear search"
+          onClick={handleLogout}
+          title="Logout"
+          className="p-2 rounded border-2 border-border bg-surface-2 text-text-muted hover:bg-danger hover:text-white hover:border-border shadow-[2px_2px_0px_var(--color-border)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
         >
-          <span className="material-symbols-outlined text-[16px]">close</span>
+          <span className="material-symbols-outlined text-[18px]">logout</span>
         </button>
-      )}
-    </div>
+      </div>
+    </header>
   );
 }
 

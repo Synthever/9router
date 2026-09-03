@@ -9,25 +9,29 @@ import Header from "../Header";
 function getToastStyle(type) {
   if (type === "success") {
     return {
-      wrapper: "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400",
+      wrapper: "border-2 border-border bg-surface text-text-main shadow-[3px_3px_0px_var(--color-border)]",
       icon: "check_circle",
+      iconColor: "text-success",
     };
   }
   if (type === "error") {
     return {
-      wrapper: "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400",
+      wrapper: "border-2 border-border bg-surface text-text-main shadow-[3px_3px_0px_var(--color-border)]",
       icon: "error",
+      iconColor: "text-danger",
     };
   }
   if (type === "warning") {
     return {
-      wrapper: "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      wrapper: "border-2 border-border bg-surface text-text-main shadow-[3px_3px_0px_var(--color-border)]",
       icon: "warning",
+      iconColor: "text-warning",
     };
   }
   return {
-    wrapper: "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    wrapper: "border-2 border-border bg-surface text-text-main shadow-[3px_3px_0px_var(--color-border)]",
     icon: "info",
+    iconColor: "text-info",
   };
 }
 
@@ -38,26 +42,26 @@ export default function DashboardLayout({ children }) {
   const removeNotification = useNotificationStore((state) => state.removeNotification);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-bg">
+    <div className="flex h-screen w-full overflow-hidden bg-bg text-text-main">
       <div className="fixed top-4 right-4 z-[80] flex w-[min(92vw,380px)] flex-col gap-2">
         {notifications.map((n) => {
           const style = getToastStyle(n.type);
           return (
             <div
               key={n.id}
-              className={`rounded-lg border px-3 py-2 shadow-lg backdrop-blur-sm ${style.wrapper}`}
+              className={`rounded border-2 px-3.5 py-2.5 backdrop-blur-sm ${style.wrapper}`}
             >
-              <div className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-[18px] leading-5">{style.icon}</span>
+              <div className="flex items-start gap-2.5">
+                <span className={`material-symbols-outlined text-[20px] leading-5 ${style.iconColor}`}>{style.icon}</span>
                 <div className="min-w-0 flex-1">
-                  {n.title ? <p className="text-xs font-semibold mb-0.5">{n.title}</p> : null}
-                  <p className="text-xs whitespace-pre-wrap break-words">{n.message}</p>
+                  {n.title ? <p className="text-xs font-black mb-0.5">{n.title}</p> : null}
+                  <p className="text-xs font-medium whitespace-pre-wrap break-words">{n.message}</p>
                 </div>
                 {n.dismissible ? (
                   <button
                     type="button"
                     onClick={() => removeNotification(n.id)}
-                    className="text-current/70 hover:text-current"
+                    className="p-0.5 rounded text-text-muted hover:text-text-main hover:bg-surface-2"
                     aria-label="Dismiss notification"
                   >
                     <span className="material-symbols-outlined text-[16px]">close</span>
@@ -71,7 +75,7 @@ export default function DashboardLayout({ children }) {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -83,7 +87,7 @@ export default function DashboardLayout({ children }) {
 
       {/* Sidebar - Mobile */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 transform lg:hidden transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-50 transform lg:hidden transition-transform duration-200 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -91,11 +95,9 @@ export default function DashboardLayout({ children }) {
       </div>
 
       {/* Main content */}
-      <main className="flex flex-col flex-1 h-full min-w-0 relative transition-colors duration-300 isolate">
-        {/* Faint grid background */}
-        <div className="landing-grid absolute inset-0 pointer-events-none -z-10" aria-hidden="true" />
+      <main className="flex flex-col flex-1 h-full min-w-0 relative transition-colors duration-200 isolate">
         <Header key={pathname} onMenuClick={() => setSidebarOpen(true)} />
-        <div className={`flex-1 overflow-y-auto custom-scrollbar ${pathname === "/dashboard/basic-chat" ? "" : "p-6 lg:p-10"} ${pathname === "/dashboard/basic-chat" ? "flex flex-col overflow-hidden" : ""}`}>
+        <div className={`flex-1 overflow-y-auto custom-scrollbar ${pathname === "/dashboard/basic-chat" ? "" : "p-6 lg:p-8"} ${pathname === "/dashboard/basic-chat" ? "flex flex-col overflow-hidden" : ""}`}>
           <div className={`${pathname === "/dashboard/basic-chat" ? "flex-1 w-full h-full flex flex-col" : "max-w-7xl mx-auto"}`}>{children}</div>
         </div>
       </main>
