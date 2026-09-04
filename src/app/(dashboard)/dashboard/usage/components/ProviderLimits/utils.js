@@ -363,16 +363,164 @@ export function parseQuotaData(provider, data) {
 
       case "antigravity":
         if (data.quotas) {
-          Object.entries(data.quotas).forEach(([modelKey, quota]) => {
-            normalizedQuotas.push({
-              name: quota.displayName || modelKey,
-              modelKey: modelKey, // Keep modelKey for sorting
-              used: quota.used || 0,
-              total: quota.total || 0,
-              resetAt: quota.resetAt || null,
-              remainingPercentage: quota.remainingPercentage,
+          // If native 4 buckets exist (gemini_5h, gemini_weekly, claude_5h, claude_weekly), format directly
+          const hasNativePools = data.quotas.gemini_5h || data.quotas.gemini_weekly || data.quotas.claude_5h || data.quotas.claude_weekly;
+
+          if (hasNativePools) {
+            const formatBucket = (key, defaultName) => {
+              const q = data.quotas[key];
+              if (!q) {
+                return {
+                  name: defaultName,
+                  modelKey: key,
+                  used: 0,
+                  total: 1000,
+                  resetAt: null,
+                  remainingPercentage: 100,
+                };
+              }
+              return {
+                name: q.displayName || defaultName,
+                modelKey: key,
+                used: q.used || 0,
+                total: q.total || 1000,
+                resetAt: q.resetAt || null,
+                remainingPercentage: q.remainingPercentage,
+              };
+            };
+
+            let gemini5h = formatBucket("gemini_5h", "Gemini (5h)");
+            let geminiWeekly = formatBucket("gemini_weekly", "Gemini (Weekly)");
+            let claude5h = formatBucket("claude_5h", "Claude (5h)");
+            let claudeWeekly = formatBucket("claude_weekly", "Claude (Weekly)");
+
+            // Rule: If weekly quota is depleted (remainingPercentage <= 0), 5h limit is also exhausted
+            if (geminiWeekly.remainingPercentage <= 0) {
+              gemini5h.remainingPercentage = 0;
+              gemini5h.used = gemini5h.total;
+              if (!gemini5h.resetAt) gemini5h.resetAt = geminiWeekly.resetAt;
+            }
+            if (claudeWeekly.remainingPercentage <= 0) {
+              claude5h.remainingPercentage = 0;
+              claude5h.used = claude5h.total;
+              if (!claude5h.resetAt) claude5h.resetAt = claudeWeekly.resetAt;
+            }
+
+            normalizedQuotas.push(gemini5h, geminiWeekly, claude5h, claudeWeekly);
+          } else {
+            // Fallback for model-based legacy quotas
+            const now = Date.now();
+            const geminiItems = [];
+            const claudeItems = [];
+
+            Object.entries(data.quotas).forEach(([modelKey, quota]) => {
+              const lower = modelKey.toLowerCase();
+              const resetMs = quota.resetAt ? new Date(quota.resetAt).getTime() : null;
+              const diffHours = resetMs ? (resetMs - now) / (1000 * 60 * 60) : null;
+              const remainingPercentage = quota.remainingPercentage !== undefined
+                ? quota.remainingPercentage
+                : (quota.total ? Math.round(((quota.total - (quota.used || 0)) / quota.total) * 100) : 100);
+
+              const item = {
+                modelKey,
+                displayName: quota.displayName || modelKey,
+                used: quota.used || 0,
+                total: quota.total || 0,
+                resetAt: quota.resetAt || null,
+                diffHours,
+                remainingPercentage,
+              };
+
+              if (lower.includes("claude") || lower.includes("opus") || lower.includes("sonnet") || lower.includes("gpt-oss")) {
+                claudeItems.push(item);
+              } else if (lower.includes("gemini")) {
+                geminiItems.push(item);
+              }
             });
-          });
+
+            const extractPools = (items, defaultPrefix) => {
+              let sess = null;
+              let week = null;
+
+              items.forEach((it) => {
+                if (it.diffHours !== null) {
+                  if (it.diffHours <= 12) {
+                    if (!sess || it.remainingPercentage < sess.remainingPercentage) sess = it;
+                  } else {
+                    if (!week || it.remainingPercentage < week.remainingPercentage) week = it;
+                  }
+                } else if (!sess) {
+                  sess = it;
+                }
+              });
+
+              return {
+                session: sess || {
+                  modelKey: `${defaultPrefix.toLowerCase()}_5h`,
+                  used: 0,
+                  total: 1000,
+                  resetAt: null,
+                  remainingPercentage: 100,
+                },
+                weekly: week || {
+                  modelKey: `${defaultPrefix.toLowerCase()}_weekly`,
+                  used: 0,
+                  total: 1000,
+                  resetAt: null,
+                  remainingPercentage: 100,
+                },
+              };
+            };
+
+            const geminiPools = extractPools(geminiItems, "gemini");
+            const claudePools = extractPools(claudeItems, "claude");
+
+            let g5h = {
+              name: "Gemini (5h)",
+              modelKey: "gemini_5h",
+              used: geminiPools.session.used,
+              total: geminiPools.session.total || 1000,
+              resetAt: geminiPools.session.resetAt,
+              remainingPercentage: geminiPools.session.remainingPercentage,
+            };
+            let gWeek = {
+              name: "Gemini (Weekly)",
+              modelKey: "gemini_weekly",
+              used: geminiPools.weekly.used,
+              total: geminiPools.weekly.total || 1000,
+              resetAt: geminiPools.weekly.resetAt,
+              remainingPercentage: geminiPools.weekly.remainingPercentage,
+            };
+            let c5h = {
+              name: "Claude (5h)",
+              modelKey: "claude_5h",
+              used: claudePools.session.used,
+              total: claudePools.session.total || 1000,
+              resetAt: claudePools.session.resetAt,
+              remainingPercentage: claudePools.session.remainingPercentage,
+            };
+            let cWeek = {
+              name: "Claude (Weekly)",
+              modelKey: "claude_weekly",
+              used: claudePools.weekly.used,
+              total: claudePools.weekly.total || 1000,
+              resetAt: claudePools.weekly.resetAt,
+              remainingPercentage: claudePools.weekly.remainingPercentage,
+            };
+
+            if (gWeek.remainingPercentage <= 0) {
+              g5h.remainingPercentage = 0;
+              g5h.used = g5h.total;
+              if (!g5h.resetAt) g5h.resetAt = gWeek.resetAt;
+            }
+            if (cWeek.remainingPercentage <= 0) {
+              c5h.remainingPercentage = 0;
+              c5h.used = c5h.total;
+              if (!c5h.resetAt) c5h.resetAt = cWeek.resetAt;
+            }
+
+            normalizedQuotas.push(g5h, gWeek, c5h, cWeek);
+          }
         }
         break;
 

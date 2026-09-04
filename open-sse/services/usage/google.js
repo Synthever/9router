@@ -157,8 +157,40 @@ export async function getAntigravityUsage(accessToken, providerSpecificData, pro
     const data = await response.json();
     const quotas = {};
 
-    // Parse model quotas (inspired by vscode-antigravity-cockpit)
-    if (data.models) {
+    // 1. Native structured groups from retrieveUserQuotaSummary
+    if (Array.isArray(data.groups)) {
+      for (const group of data.groups) {
+        const isClaude = group.displayName?.toLowerCase().includes("claude") || group.displayName?.toLowerCase().includes("3p");
+        const prefix = isClaude ? "claude" : "gemini";
+        const groupLabel = isClaude ? "Claude" : "Gemini";
+
+        for (const bucket of (group.buckets || [])) {
+          const window = bucket.window || (bucket.bucketId?.includes("5h") ? "5h" : "weekly");
+          const is5h = window === "5h";
+          const quotaKey = is5h ? `${prefix}_5h` : `${prefix}_weekly`;
+          const displayName = is5h ? `${groupLabel} (5h)` : `${groupLabel} (Weekly)`;
+
+          const remainingFraction = bucket.remainingFraction != null ? Number(bucket.remainingFraction) : 1;
+          const remainingPercentage = remainingFraction * 100;
+          const total = 1000;
+          const remaining = Math.round(total * remainingFraction);
+          const used = Math.max(0, total - remaining);
+
+          quotas[quotaKey] = {
+            used,
+            total,
+            resetAt: parseResetTime(bucket.resetTime),
+            remainingPercentage,
+            unlimited: false,
+            displayName,
+            window,
+          };
+        }
+      }
+    }
+
+    // 2. Fallback / legacy format: parse model quotas if groups not returned
+    if (Object.keys(quotas).length === 0 && data.models) {
       // Filter only recommended/important models (must match PROVIDER_MODELS ag ids)
       const importantModels = [
         'gemini-3.8-flash-high',
