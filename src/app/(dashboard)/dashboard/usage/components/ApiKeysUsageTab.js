@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Card, Badge, Button, Input, Modal } from "@/shared/components";
+import { Card, Badge, Button, Input } from "@/shared/components";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import ApiKeyConfigModal from "@/app/(dashboard)/dashboard/endpoint/components/ApiKeyConfigModal";
 
@@ -32,9 +32,10 @@ export default function ApiKeysUsageTab({ period = "7d" }) {
   const [selectedKeyForConfig, setSelectedKeyForConfig] = useState(null);
   const { copied, copy } = useCopyToClipboard();
 
-  const fetchKeyUsage = useCallback(async () => {
+  // Initial HTTP Fetch
+  const fetchKeyUsage = useCallback(async (isSilent = false) => {
     try {
-      setLoading(true);
+      if (!isSilent) setLoading(true);
       const res = await fetch(`/api/usage/keys?period=${period}`);
       if (res.ok) {
         const json = await res.json();
@@ -43,13 +44,39 @@ export default function ApiKeysUsageTab({ period = "7d" }) {
     } catch (e) {
       console.error("Failed to load API key usage:", e);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }, [period]);
 
   useEffect(() => {
     fetchKeyUsage();
   }, [fetchKeyUsage]);
+
+  // Real-time SSE Stream (Auto-updates without refreshing)
+  useEffect(() => {
+    const es = new EventSource(`/api/usage/keys/stream?period=${period}`);
+
+    es.onmessage = (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload && payload.keys) {
+          setData(payload);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("[SSE API KEYS USAGE] parse error:", err);
+      }
+    };
+
+    es.onerror = () => {
+      // Fallback: don't block UI if SSE connection drops
+      setLoading(false);
+    };
+
+    return () => {
+      es.close();
+    };
+  }, [period]);
 
   const toggleExpand = (id) => {
     setExpandedKeys((prev) => {
@@ -78,7 +105,7 @@ export default function ApiKeysUsageTab({ period = "7d" }) {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        fetchKeyUsage();
+        fetchKeyUsage(true);
       }
     } catch (e) {
       console.error("Failed to update key config:", e);
@@ -154,15 +181,21 @@ export default function ApiKeysUsageTab({ period = "7d" }) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          icon="refresh"
-          onClick={fetchKeyUsage}
-          disabled={loading}
-        >
-          Refresh Data
-        </Button>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 text-xs text-success font-medium">
+            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            Live Updates
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon="refresh"
+            onClick={() => fetchKeyUsage(false)}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Keys Usage List / Table */}
