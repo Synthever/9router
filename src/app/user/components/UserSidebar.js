@@ -20,7 +20,7 @@ export default function UserSidebar({ onClose }) {
   const isActive = (href) => pathname === href;
 
   return (
-    <aside className="flex w-72 flex-col border-r-2 border-border bg-sidebar transition-colors duration-200 min-h-full h-screen sticky top-0">
+    <aside className="flex w-72 flex-col border-r-2 border-border bg-sidebar transition-colors duration-200 h-full">
       {/* Traffic lights header */}
       <div className="flex items-center justify-between px-6 pt-5 pb-2">
         <div className="flex items-center gap-2">
@@ -32,6 +32,7 @@ export default function UserSidebar({ onClose }) {
           <button
             onClick={onClose}
             className="lg:hidden p-1 rounded border-2 border-border text-text-muted hover:text-text-main"
+            aria-label="Close sidebar"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
@@ -39,24 +40,24 @@ export default function UserSidebar({ onClose }) {
       </div>
 
       {/* Brand Logo & Portal Tag */}
-      <div className="px-6 py-4 flex flex-col gap-1 border-b-2 border-border">
+      <div className="px-6 py-4 flex flex-col gap-1">
         <Link href="/user/dashboard" className="flex items-center gap-3 group">
-          <div className="flex items-center justify-center size-9 rounded border-2 border-border bg-primary shadow-[2px_2px_0px_var(--color-border)] group-hover:translate-x-[-1px] group-hover:translate-y-[-1px] transition-transform">
+          <div className="flex items-center justify-center size-9 rounded border-2 border-border bg-brand-500 shadow-[2px_2px_0px_var(--color-border)] group-hover:translate-x-[-1px] group-hover:translate-y-[-1px] transition-transform">
             <span className="material-symbols-outlined text-white text-[20px]">router</span>
           </div>
           <div className="flex flex-col">
-            <h1 className="text-base font-black tracking-tight text-text-main">
-              9Router Portal
+            <h1 className="text-lg font-black tracking-tight text-text-main">
+              9Router
             </h1>
-            <span className="text-[10px] uppercase font-bold text-primary tracking-wider">User Dashboard</span>
+            <span className="text-xs font-mono text-text-muted">User Portal</span>
           </div>
         </Link>
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto custom-scrollbar">
         <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-text-muted">
-          User Menu
+          Dashboard
         </div>
         {userNavItems.map((item) => {
           const active = isActive(item.href);
