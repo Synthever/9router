@@ -73,17 +73,6 @@ export default function UserLoginPage() {
             </Button>
           </form>
         </Card>
-
-        {/* Back Link */}
-        <div className="text-center mt-6">
-          <a
-            href="/dashboard"
-            className="text-xs font-semibold text-text-muted hover:text-primary transition-colors inline-flex items-center gap-1"
-          >
-            <span className="material-symbols-outlined text-[14px]">arrow_back</span>
-            Switch to Admin Dashboard
-          </a>
-        </div>
       </div>
     </div>
   );
