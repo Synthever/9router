@@ -26,19 +26,19 @@ export default function Navigation() {
         <div className="hidden md:flex items-center gap-8">
           <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="#features">Features</a>
           <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="#how-it-works">How it Works</a>
-          <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="https://github.com/decolua/9router#readme" target="_blank" rel="noopener noreferrer">Docs</a>
-          <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors flex items-center gap-1" href="https://github.com/decolua/9router" target="_blank" rel="noopener noreferrer">
+          <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="#get-started">Get Started</a>
+          <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors flex items-center gap-1" href="https://github.com/Synthever/9router" target="_blank" rel="noopener noreferrer">
             GitHub <span className="material-symbols-outlined text-[14px]">open_in_new</span>
           </a>
         </div>
 
-        {/* CTA + Mobile menu */}
+        {/* CTA User Portal Button */}
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => router.push("/dashboard")}
-            className="hidden sm:flex h-9 items-center justify-center rounded-lg px-4 bg-[#f97815] hover:bg-[#e0650a] transition-all text-[#181411] text-sm font-bold shadow-[0_0_15px_rgba(249,120,21,0.4)] hover:shadow-[0_0_20px_rgba(249,120,21,0.6)]"
+            onClick={() => router.push("/user/login")}
+            className="hidden sm:flex h-9 items-center justify-center rounded-lg px-4 bg-[#f97815] hover:bg-[#e0650a] transition-all text-[#181411] text-sm font-bold shadow-[0_0_15px_rgba(249,120,21,0.4)] hover:shadow-[0_0_20px_rgba(249,120,21,0.6)] cursor-pointer"
           >
-            Get Started
+            User Portal
           </button>
           <button 
             className="md:hidden text-white"
@@ -55,13 +55,13 @@ export default function Navigation() {
           <div className="flex flex-col gap-4 p-6">
             <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="#features" onClick={() => setMobileMenuOpen(false)}>Features</a>
             <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>How it Works</a>
-            <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="https://github.com/decolua/9router#readme" target="_blank" rel="noopener noreferrer">Docs</a>
-            <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="https://github.com/decolua/9router" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="#get-started" onClick={() => setMobileMenuOpen(false)}>Get Started</a>
+            <a className="text-gray-300 hover:text-white text-sm font-medium transition-colors" href="https://github.com/Synthever/9router" target="_blank" rel="noopener noreferrer">GitHub</a>
             <button 
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/user/login")}
               className="h-9 rounded-lg bg-[#f97815] hover:bg-[#e0650a] text-[#181411] text-sm font-bold"
             >
-              Get Started
+              User Portal
             </button>
           </div>
         </div>
@@ -69,4 +69,3 @@ export default function Navigation() {
     </nav>
   );
 }
-

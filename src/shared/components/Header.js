@@ -215,10 +215,11 @@ export default function Header({ onMenuClick, showMenuButton = true }) {
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" });
       if (res.ok) {
-        window.location.assign("/login");
+        window.location.assign("/dashboard/login");
       }
     } catch (err) {
       console.error("Failed to logout:", err);
+      window.location.assign("/dashboard/login");
     }
   };
 

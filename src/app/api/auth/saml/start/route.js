@@ -9,10 +9,10 @@ export async function GET(request) {
   const origin = getSamlBaseUrl(request, settings);
   try {
     if (!isSamlConfigured(settings)) {
-      return NextResponse.redirect(new URL("/login?error=saml_not_configured", origin));
+      return NextResponse.redirect(new URL("/dashboard/login?error=saml_not_configured", origin));
     }
 
-    const { authorizeUrl, requestId } = await buildSamlAuthorizeUrl(request, settings);
+    const { url: samlLoginUrl, requestId } = await buildSamlAuthnRequest(request, settings);
 
     const cookieStore = await cookies();
     cookieStore.set("saml_state", requestId, {
@@ -20,13 +20,13 @@ export async function GET(request) {
       secure: shouldUseSecureCookie(request),
       sameSite: "lax",
       path: "/",
-      maxAge: 10 * 60,
+      maxAge: 300,
     });
 
-    return NextResponse.redirect(authorizeUrl);
-  } catch (error) {
+    return NextResponse.redirect(samlLoginUrl);
+    } catch (error) {
     return NextResponse.redirect(
-      new URL(`/login?error=${encodeURIComponent(error.message || "saml_start_failed")}`, origin)
+      new URL(`/dashboard/login?error=${encodeURIComponent(error.message || "saml_start_failed")}`, origin)
     );
-  }
+    }
 }
