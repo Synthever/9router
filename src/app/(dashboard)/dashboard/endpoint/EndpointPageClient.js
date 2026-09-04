@@ -17,6 +17,7 @@ import EndpointRow from "./components/EndpointRow";
 import StatusAlert from "./components/StatusAlert";
 import Tooltip from "./components/Tooltip";
 import SecurityWarning from "./components/SecurityWarning";
+import ApiKeyConfigModal from "./components/ApiKeyConfigModal";
 export default function APIPageClient({ machineId }) {
   const [keys, setKeys] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,7 @@ export default function APIPageClient({ machineId }) {
   const [newKeyName, setNewKeyName] = useState("");
   const [createdKey, setCreatedKey] = useState(null);
   const [confirmState, setConfirmState] = useState(null);
+  const [selectedKeyForConfig, setSelectedKeyForConfig] = useState(null);
 
   const [requireApiKey, setRequireApiKey] = useState(false);
   const [requireLogin, setRequireLogin] = useState(true);
@@ -682,6 +684,22 @@ export default function APIPageClient({ machineId }) {
     }
   };
 
+  const handleUpdateKeyConfig = async ({ id, name, config }) => {
+    try {
+      const res = await fetch(`/api/keys/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, config }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setKeys(prev => prev.map(k => k.id === id ? { ...k, name: data.key.name, config: data.key.config } : k));
+      }
+    } catch (error) {
+      console.log("Error updating key config:", error);
+    }
+  };
+
   const maskKey = (fullKey) => {
     if (!fullKey || fullKey.length <= 10) return fullKey || "";
     return fullKey.slice(0, 6) + "•".repeat(fullKey.length - 10) + fullKey.slice(-4);
@@ -1044,6 +1062,13 @@ export default function APIPageClient({ machineId }) {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedKeyForConfig(key)}
+                    className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
+                    title="Governance & limits settings"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">settings</span>
+                  </button>
                   <Toggle
                     size="sm"
                     checked={key.isActive ?? true}
@@ -1144,6 +1169,14 @@ export default function APIPageClient({ machineId }) {
           </Button>
         </div>
       </Modal>
+
+      {/* Governance & Config Modal */}
+      <ApiKeyConfigModal
+        isOpen={!!selectedKeyForConfig}
+        apiKey={selectedKeyForConfig}
+        onClose={() => setSelectedKeyForConfig(null)}
+        onSave={handleUpdateKeyConfig}
+      />
 
       {/* Enable Tunnel Modal */}
       <Modal

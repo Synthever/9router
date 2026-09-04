@@ -4,6 +4,7 @@ import {
   clearAccountError,
   extractApiKey,
   isValidApiKey,
+  checkApiKeyGovernance,
 } from "../services/auth.js";
 import { getSettings } from "@/lib/localDb";
 import { getModelInfo, getComboModels } from "../services/model.js";
@@ -37,10 +38,15 @@ export async function handleImageGeneration(request) {
 
   const apiKey = extractApiKey(request);
   const settings = await getSettings();
-  if (settings.requireApiKey) {
-    if (!apiKey) return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Missing API key");
-    const valid = await isValidApiKey(apiKey);
-    if (!valid) return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Invalid API key");
+  if (settings.requireApiKey || apiKey) {
+    if (!apiKey && settings.requireApiKey) return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Missing API key");
+    if (apiKey) {
+      const gov = await checkApiKeyGovernance(apiKey, { model: modelStr, endpoint: "images" });
+      if (!gov.valid) {
+        log.warn("AUTH", `API key governance rejection: ${gov.error}`);
+        return errorResponse(gov.status || HTTP_STATUS.UNAUTHORIZED, gov.error);
+      }
+    }
   }
 
   if (!modelStr) return errorResponse(HTTP_STATUS.BAD_REQUEST, "Missing model");

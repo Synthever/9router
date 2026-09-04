@@ -6,6 +6,7 @@ import {
   clearAccountError,
   extractApiKey,
   isValidApiKey,
+  checkApiKeyGovernance,
 } from "../services/auth.js";
 import { handleAntigravityQuotaError, clearAntigravityStrikes } from "../services/antigravityQuota.js";
 import { getSettings } from "@/lib/localDb";
@@ -66,17 +67,33 @@ export async function handleChat(request, clientRawRequest = null) {
     log.debug("AUTH", "No API key provided (local mode)");
   }
 
-  // Enforce API key if enabled in settings
+  // Enforce API key if enabled in settings OR governance checks
   const settings = await getSettings();
-  if (settings.requireApiKey) {
-    if (!apiKey) {
+  let apiKeyObj = null;
+  if (settings.requireApiKey || apiKey) {
+    if (!apiKey && settings.requireApiKey) {
       log.warn("AUTH", "Missing API key (requireApiKey=true)");
       return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Missing API key");
     }
-    const valid = await isValidApiKey(apiKey);
-    if (!valid) {
-      log.warn("AUTH", "Invalid API key (requireApiKey=true)");
-      return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Invalid API key");
+    if (apiKey) {
+      const gov = await checkApiKeyGovernance(apiKey, {
+        model: modelStr,
+        endpoint: "chat",
+        estimatedTokens: (typeof body.max_tokens === "number" ? body.max_tokens : 2000),
+      });
+      if (!gov.valid) {
+        log.warn("AUTH", `API key governance rejection: ${gov.error}`);
+        return errorResponse(gov.status || HTTP_STATUS.UNAUTHORIZED, gov.error);
+      }
+      apiKeyObj = gov.keyInfo;
+    }
+  }
+
+  // Cap max output tokens per request if configured on the API key
+  if (apiKeyObj?.config?.maxTokensPerRequest && Number(apiKeyObj.config.maxTokensPerRequest) > 0) {
+    const keyCap = Number(apiKeyObj.config.maxTokensPerRequest);
+    if (!body.max_tokens || body.max_tokens > keyCap) {
+      body.max_tokens = keyCap;
     }
   }
 

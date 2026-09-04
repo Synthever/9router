@@ -243,11 +243,37 @@ export async function saveRequestUsage(entry) {
     const db = await getAdapter();
 
     if (!entry.timestamp) entry.timestamp = new Date().toISOString();
-    entry.cost = await calculateCost(entry.provider, entry.model, entry.tokens);
+
+    // Check if API key has a token/cost multiplier
+    let multiplier = 1.0;
+    if (entry.apiKey) {
+      try {
+        const { getApiKeyByKey } = await import("./apiKeysRepo.js");
+        const keyObj = await getApiKeyByKey(entry.apiKey);
+        if (keyObj?.config?.multiplier && Number(keyObj.config.multiplier) > 0) {
+          multiplier = Number(keyObj.config.multiplier);
+        }
+      } catch {}
+    }
 
     const tokens = entry.tokens || {};
-    const promptTokens = tokens.prompt_tokens || tokens.input_tokens || 0;
-    const completionTokens = tokens.completion_tokens || tokens.output_tokens || 0;
+    let promptTokens = tokens.prompt_tokens || tokens.input_tokens || 0;
+    let completionTokens = tokens.completion_tokens || tokens.output_tokens || 0;
+    let cachedTokens = tokens.cached_tokens || tokens.cache_read_input_tokens || 0;
+
+    if (multiplier !== 1.0) {
+      promptTokens = Math.round(promptTokens * multiplier);
+      completionTokens = Math.round(completionTokens * multiplier);
+      cachedTokens = Math.round(cachedTokens * multiplier);
+      if (tokens.prompt_tokens !== undefined) tokens.prompt_tokens = promptTokens;
+      if (tokens.completion_tokens !== undefined) tokens.completion_tokens = completionTokens;
+      if (tokens.cached_tokens !== undefined) tokens.cached_tokens = cachedTokens;
+    }
+
+    entry.cost = await calculateCost(entry.provider, entry.model, entry.tokens);
+    if (multiplier !== 1.0 && entry.cost > 0) {
+      entry.cost = entry.cost * multiplier;
+    }
 
     let inserted = false;
 

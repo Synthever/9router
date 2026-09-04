@@ -4,6 +4,7 @@ import {
   clearAccountError,
   extractApiKey,
   isValidApiKey,
+  checkApiKeyGovernance,
 } from "../services/auth.js";
 import { getSettings } from "@/lib/localDb";
 import { getModelInfo } from "../services/model.js";
@@ -51,17 +52,19 @@ export async function handleEmbeddings(request) {
     log.debug("AUTH", "No API key provided (local mode)");
   }
 
-  // Enforce API key if enabled in settings
+  // Enforce API key if enabled in settings OR governance checks
   const settings = await getSettings();
-  if (settings.requireApiKey) {
-    if (!apiKey) {
-      log.warn("AUTH", "Missing API key (requireApiKey=true)");
+  if (settings.requireApiKey || apiKey) {
+    if (!apiKey && settings.requireApiKey) {
+      log.warn("EMBEDDINGS", "Missing API key (requireApiKey=true)");
       return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Missing API key");
     }
-    const valid = await isValidApiKey(apiKey);
-    if (!valid) {
-      log.warn("AUTH", "Invalid API key (requireApiKey=true)");
-      return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Invalid API key");
+    if (apiKey) {
+      const gov = await checkApiKeyGovernance(apiKey, { model: modelStr, endpoint: "embeddings" });
+      if (!gov.valid) {
+        log.warn("AUTH", `API key governance rejection: ${gov.error}`);
+        return errorResponse(gov.status || HTTP_STATUS.UNAUTHORIZED, gov.error);
+      }
     }
   }
 
