@@ -266,6 +266,17 @@ input, textarea {
   background-color: var(--color-primary);
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Thin horizontal scrollbar */
 .scroll-thin-x {
   scrollbar-width: thin;

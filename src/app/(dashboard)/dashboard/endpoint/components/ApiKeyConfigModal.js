@@ -117,8 +117,8 @@ export default function ApiKeyConfigModal({ isOpen, onClose, apiKey, onSave }) {
   if (!apiKey) return null;
 
   return (
-    <Modal isOpen={isOpen} title={`Configure API Key: ${apiKey.name}`} onClose={onClose} size="xl">
-      <div className="flex flex-col gap-6 max-h-[75vh] overflow-y-auto px-1 py-1 custom-scrollbar">
+    <Modal isOpen={isOpen} title={`Configure API Key: ${apiKey.name}`} onClose={onClose} size="xl" hideScrollbar>
+      <div className="flex flex-col gap-6 no-scrollbar">
         {/* Section: Basic Settings */}
         <div className="flex flex-col gap-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
