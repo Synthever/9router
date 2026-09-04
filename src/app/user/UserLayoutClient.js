@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUserAuth } from "./UserAuthContext";
-import { Button, Badge } from "@/shared/components";
+import UserSidebar from "./components/UserSidebar";
+import { Button } from "@/shared/components";
 
 export default function UserLayoutClient({ children }) {
   const { apiKey, userInfo, loading, logout } = useUserAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -24,7 +26,7 @@ export default function UserLayoutClient({ children }) {
 
   if (loading && !userInfo) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="h-screen w-full bg-bg flex items-center justify-center">
         <span className="material-symbols-outlined text-[32px] text-primary animate-spin">
           progress_activity
         </span>
@@ -32,89 +34,76 @@ export default function UserLayoutClient({ children }) {
     );
   }
 
-  const navItems = [
-    { href: "/user/dashboard", label: "Overview", icon: "dashboard" },
-    { href: "/user/usage", label: "Usage History", icon: "bar_chart" },
-    { href: "/user/models", label: "Available Models", icon: "view_in_ar" },
-    { href: "/user/docs", label: "Quick Start & Presets", icon: "integration_instructions" },
-  ];
-
   return (
-    <div className="min-h-screen bg-bg text-text-main flex flex-col font-sans">
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-surface border-b-2 border-border shadow-[0_2px_0px_var(--color-border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/user/dashboard" className="flex items-center gap-2 font-bold text-lg text-primary tracking-tight">
-              <span className="material-symbols-outlined text-[26px]">router</span>
-              <span>9Router User Portal</span>
-            </Link>
+    <div className="flex h-screen w-full overflow-hidden bg-bg text-text-main font-sans">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-            <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all ${
-                      isActive
-                        ? "bg-primary text-white shadow-[2px_2px_0px_var(--color-border)]"
-                        : "text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">{item.icon}</span>
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
+      {/* Sidebar - Desktop */}
+      <div className="hidden lg:flex shrink-0">
+        <UserSidebar />
+      </div>
+
+      {/* Sidebar - Mobile Drawer */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 transform lg:hidden transition-transform duration-200 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <UserSidebar onClose={() => setSidebarOpen(false)} />
+      </div>
+
+      {/* Main Container */}
+      <div className="flex flex-col flex-1 h-full min-w-0 relative">
+        {/* Top Header */}
+        <header className="h-14 border-b-2 border-border bg-surface px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-[0_2px_0px_var(--color-border)]">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-1.5 rounded border-2 border-border text-text-muted hover:text-text-main hover:bg-surface-2"
+              aria-label="Open navigation menu"
+            >
+              <span className="material-symbols-outlined text-[20px]">menu</span>
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-text-main capitalize">
+                {pathname.replace("/user/", "").replace("-", " ") || "Dashboard"}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
             {userInfo?.key && (
-              <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-bold text-text-main">{userInfo.key.name}</span>
-                <span className="text-[10px] font-mono text-text-muted">{userInfo.key.keyMasked}</span>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                <span className="font-bold text-text-main hidden sm:inline">{userInfo.key.name}</span>
+                <code className="text-text-muted font-mono bg-surface-2 px-1.5 py-0.5 rounded border border-border">
+                  {userInfo.key.keyMasked}
+                </code>
               </div>
             )}
-            <Button variant="ghost" size="sm" icon="logout" onClick={logout}>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="logout"
+              onClick={logout}
+              className="hidden sm:inline-flex"
+            >
               Sign Out
             </Button>
           </div>
-        </div>
+        </header>
 
-        {/* Mobile Navigation Row */}
-        <div className="md:hidden flex items-center justify-around border-t border-border bg-surface-2 px-2 py-1 overflow-x-auto">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold uppercase whitespace-nowrap ${
-                  isActive
-                    ? "bg-primary text-white"
-                    : "text-text-muted hover:text-text-main"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[14px]">{item.icon}</span>
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </header>
-
-      {/* Main Page Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        {children}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t-2 border-border bg-surface py-4 text-center text-xs text-text-muted">
-        <p>9Router Public Gateway User Portal • Powered by 9Router Engine</p>
-      </footer>
+        {/* Scrollable Page Content */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }
