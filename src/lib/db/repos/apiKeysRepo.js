@@ -21,17 +21,47 @@ export async function getApiKeys() {
   return rows.map(rowToKey);
 }
 
+const KEY_CACHE_TTL_MS = 60_000;
+const keyCacheById = new Map();
+const keyCacheByKey = new Map();
+
+function invalidateKeyCache(id = null, key = null) {
+  if (id) keyCacheById.delete(id);
+  if (key) keyCacheByKey.delete(key);
+  if (!id && !key) {
+    keyCacheById.clear();
+    keyCacheByKey.clear();
+  }
+}
+
 export async function getApiKeyById(id) {
+  if (!id) return null;
+  const cached = keyCacheById.get(id);
+  if (cached && Date.now() - cached.ts < KEY_CACHE_TTL_MS) return cached.val;
+
   const db = await getAdapter();
   const row = db.get(`SELECT * FROM apiKeys WHERE id = ?`, [id]);
-  return rowToKey(row);
+  const val = rowToKey(row);
+  if (val) {
+    keyCacheById.set(id, { val, ts: Date.now() });
+    keyCacheByKey.set(val.key, { val, ts: Date.now() });
+  }
+  return val;
 }
 
 export async function getApiKeyByKey(key) {
   if (!key) return null;
+  const cached = keyCacheByKey.get(key);
+  if (cached && Date.now() - cached.ts < KEY_CACHE_TTL_MS) return cached.val;
+
   const db = await getAdapter();
   const row = db.get(`SELECT * FROM apiKeys WHERE key = ?`, [key]);
-  return rowToKey(row);
+  const val = rowToKey(row);
+  if (val) {
+    keyCacheByKey.set(key, { val, ts: Date.now() });
+    keyCacheById.set(val.id, { val, ts: Date.now() });
+  }
+  return val;
 }
 
 export async function createApiKey(name, machineId, config = {}) {
@@ -72,12 +102,16 @@ export async function updateApiKey(id, data) {
     );
     result = merged;
   });
+  invalidateKeyCache(id, result?.key);
   return result;
 }
 
 export async function deleteApiKey(id) {
   const db = await getAdapter();
+  const row = db.get(`SELECT key FROM apiKeys WHERE id = ?`, [id]);
+  const key = row?.key;
   const res = db.run(`DELETE FROM apiKeys WHERE id = ?`, [id]);
+  invalidateKeyCache(id, key);
   return (res?.changes ?? 0) > 0;
 }
 
