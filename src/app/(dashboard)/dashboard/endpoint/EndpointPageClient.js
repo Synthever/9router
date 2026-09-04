@@ -1028,46 +1028,67 @@ export default function APIPageClient({ machineId }) {
             {keys.map((key) => (
               <div
                 key={key.id}
-                className={`group flex items-center justify-between py-3 border-b border-black/[0.03] dark:border-white/[0.03] last:border-b-0 ${key.isActive === false ? "opacity-60" : ""}`}
+                className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5 border-b border-black/[0.06] dark:border-white/[0.06] last:border-b-0 ${key.isActive === false ? "opacity-60" : ""}`}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{key.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <code className="text-xs text-text-muted font-mono">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold truncate">{key.name}</p>
+                    {key.isActive === false && (
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                        Paused
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                    <code className="text-xs text-text-muted font-mono bg-black/[0.04] dark:bg-white/[0.04] px-1.5 py-0.5 rounded border border-border">
                       {visibleKeys.has(key.id) ? key.key : maskKey(key.key)}
                     </code>
                     <button
                       onClick={() => toggleKeyVisibility(key.id)}
-                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
+                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all cursor-pointer"
                       title={visibleKeys.has(key.id) ? "Hide key" : "Show key"}
                     >
-                      <span className="material-symbols-outlined text-[14px]">
+                      <span className="material-symbols-outlined text-[15px]">
                         {visibleKeys.has(key.id) ? "visibility_off" : "visibility"}
                       </span>
                     </button>
                     <button
                       onClick={() => copy(key.key, key.id)}
-                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
+                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all cursor-pointer"
+                      title="Copy Key"
                     >
-                      <span className="material-symbols-outlined text-[14px]">
+                      <span className="material-symbols-outlined text-[15px]">
                         {copied === key.id ? "check" : "content_copy"}
                       </span>
                     </button>
                   </div>
-                  <p className="text-xs text-text-muted mt-1">
-                    Created {new Date(key.createdAt).toLocaleDateString()}
-                  </p>
-                  {key.isActive === false && (
-                    <p className="text-xs text-orange-500 mt-1">Paused</p>
-                  )}
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted mt-1.5">
+                    <span>Created {new Date(key.createdAt).toLocaleDateString()}</span>
+                    {key.config?.maxTokens && (
+                      <span className="flex items-center gap-1">
+                        • Limit: <b>{Number(key.config.maxTokens).toLocaleString()} tokens</b>
+                      </span>
+                    )}
+                    {key.config?.maxCost && (
+                      <span className="flex items-center gap-1">
+                        • Cost Cap: <b>${Number(key.config.maxCost).toFixed(2)}</b>
+                      </span>
+                    )}
+                    {key.config?.resetPeriod && key.config.resetPeriod !== "none" && (
+                      <span className="capitalize">
+                        ({key.config.resetPeriod})
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                   <button
                     onClick={() => setSelectedKeyForConfig(key)}
-                    className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
+                    className="p-2 hover:bg-primary/10 rounded-lg text-text-muted hover:text-primary transition-all cursor-pointer flex items-center gap-1 text-xs font-medium"
                     title="Governance & limits settings"
                   >
-                    <span className="material-symbols-outlined text-[18px]">settings</span>
+                    <span className="material-symbols-outlined text-[18px]">tune</span>
+                    <span className="sm:hidden">Settings</span>
                   </button>
                   <Toggle
                     size="sm"
@@ -1090,7 +1111,8 @@ export default function APIPageClient({ machineId }) {
                   />
                   <button
                     onClick={() => handleDeleteKey(key.id)}
-                    className="p-2 hover:bg-red-500/10 rounded text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
+                    className="p-2 hover:bg-red-500/10 rounded-lg text-red-500 transition-all cursor-pointer"
+                    title="Delete key"
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
                   </button>

@@ -35,7 +35,7 @@ export default function ApiKeyConfigModal({ isOpen, onClose, apiKey, onSave }) {
       setMultiplier(cfg.multiplier !== undefined ? String(cfg.multiplier) : "1.0");
       setRateLimitRpm(cfg.rateLimitRpm ? String(cfg.rateLimitRpm) : "");
       setRateLimitTpm(cfg.rateLimitTpm ? String(cfg.rateLimitTpm) : "");
-      
+
       if (cfg.expiresAt) {
         try {
           const d = new Date(cfg.expiresAt);
@@ -51,7 +51,7 @@ export default function ApiKeyConfigModal({ isOpen, onClose, apiKey, onSave }) {
       setAllowedModels(Array.isArray(cfg.allowedModels) ? cfg.allowedModels.join(", ") : "");
       setBlockedModels(Array.isArray(cfg.blockedModels) ? cfg.blockedModels.join(", ") : "");
       setMaxTokensPerRequest(cfg.maxTokensPerRequest ? String(cfg.maxTokensPerRequest) : "");
-      
+
       if (Array.isArray(cfg.allowedEndpoints)) {
         const set = new Set(cfg.allowedEndpoints.map(e => e.toLowerCase()));
         setAllowedEndpoints({
@@ -84,12 +84,12 @@ export default function ApiKeyConfigModal({ isOpen, onClose, apiKey, onSave }) {
       if (allowedEndpoints.fetch) endpoints.push("fetch");
 
       const config = {
-        maxTokens: maxTokens ? parseInt(maxTokens, 10) : null,
-        maxCost: maxCost ? parseFloat(maxCost) : null,
+        maxTokens: maxTokens.trim() ? parseInt(maxTokens.trim(), 10) : null,
+        maxCost: maxCost.trim() ? parseFloat(maxCost.trim()) : null,
         resetPeriod: resetPeriod || "none",
-        multiplier: multiplier ? parseFloat(multiplier) : 1.0,
-        rateLimitRpm: rateLimitRpm ? parseInt(rateLimitRpm, 10) : null,
-        rateLimitTpm: rateLimitTpm ? parseInt(rateLimitTpm, 10) : null,
+        multiplier: multiplier.trim() ? parseFloat(multiplier.trim()) : 1.0,
+        rateLimitRpm: rateLimitRpm.trim() ? parseInt(rateLimitRpm.trim(), 10) : null,
+        rateLimitTpm: rateLimitTpm.trim() ? parseInt(rateLimitTpm.trim(), 10) : null,
         expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
         allowedModels: allowedModels.trim()
           ? allowedModels.split(",").map(m => m.trim()).filter(Boolean)
@@ -97,7 +97,7 @@ export default function ApiKeyConfigModal({ isOpen, onClose, apiKey, onSave }) {
         blockedModels: blockedModels.trim()
           ? blockedModels.split(",").map(m => m.trim()).filter(Boolean)
           : null,
-        maxTokensPerRequest: maxTokensPerRequest ? parseInt(maxTokensPerRequest, 10) : null,
+        maxTokensPerRequest: maxTokensPerRequest.trim() ? parseInt(maxTokensPerRequest.trim(), 10) : null,
         allowedEndpoints: endpoints.length === 5 ? null : endpoints,
       };
 
@@ -117,160 +117,217 @@ export default function ApiKeyConfigModal({ isOpen, onClose, apiKey, onSave }) {
   if (!apiKey) return null;
 
   return (
-    <Modal isOpen={isOpen} title={`Configure API Key: ${apiKey.name}`} onClose={onClose} size="lg">
-      <div className="flex flex-col gap-5 max-h-[75vh] overflow-y-auto px-1 py-2">
-        {/* Basic Name */}
-        <Input
-          label="Key Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Client App, Dev Environment"
-        />
-
-        {/* Token & Cost Quotas */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Input
-            label="Max Tokens Quota"
-            type="number"
-            value={maxTokens}
-            onChange={(e) => setMaxTokens(e.target.value)}
-            placeholder="e.g. 1000000 (Empty = Unlimited)"
-          />
-          <Input
-            label="Max Cost ($ USD)"
-            type="number"
-            step="0.01"
-            value={maxCost}
-            onChange={(e) => setMaxCost(e.target.value)}
-            placeholder="e.g. 10.00 (Empty = Unlimited)"
-          />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-              Quota Reset Cycle
-            </label>
-            <select
-              value={resetPeriod}
-              onChange={(e) => setResetPeriod(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-              <option value="none">No Reset (Lifetime Total)</option>
-              <option value="daily">Daily Reset (Midnight)</option>
-              <option value="monthly">Monthly Reset (1st of month)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Multiplier & Cap */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Input
-            label="Token Multiplier (Billing Markup)"
-            type="number"
-            step="0.1"
-            value={multiplier}
-            onChange={(e) => setMultiplier(e.target.value)}
-            placeholder="1.0 (e.g. 1.5 = 1.5x usage recorded)"
-          />
-          <Input
-            label="Max Output Tokens / Request"
-            type="number"
-            value={maxTokensPerRequest}
-            onChange={(e) => setMaxTokensPerRequest(e.target.value)}
-            placeholder="e.g. 4096 (Cap max_tokens)"
-          />
-        </div>
-
-        {/* Rate Limiting */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Input
-            label="Rate Limit (RPM)"
-            type="number"
-            value={rateLimitRpm}
-            onChange={(e) => setRateLimitRpm(e.target.value)}
-            placeholder="Requests / min (Empty = Unlimited)"
-          />
-          <Input
-            label="Rate Limit (TPM)"
-            type="number"
-            value={rateLimitTpm}
-            onChange={(e) => setRateLimitTpm(e.target.value)}
-            placeholder="Tokens / min (Empty = Unlimited)"
-          />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-              Expiration Date
-            </label>
-            <input
-              type="datetime-local"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/50"
+    <Modal isOpen={isOpen} title={`Configure API Key: ${apiKey.name}`} onClose={onClose} size="xl">
+      <div className="flex flex-col gap-6 max-h-[75vh] overflow-y-auto px-1 py-1 custom-scrollbar">
+        {/* Section: Basic Settings */}
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">badge</span>
+            General Information
+          </h3>
+          <div>
+            <Input
+              label="Key Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Client App, Dev Environment"
             />
           </div>
         </div>
 
-        {/* Model Restrictions */}
+        {/* Section: Quota & Billing */}
         <div className="flex flex-col gap-3">
-          <Input
-            label="Allowed Models (Whitelist)"
-            value={allowedModels}
-            onChange={(e) => setAllowedModels(e.target.value)}
-            placeholder="Comma separated: ag/gemini-*, qd/claude-3-5-sonnet (Leave empty for all)"
-          />
-          <Input
-            label="Blocked Models (Blacklist)"
-            value={blockedModels}
-            onChange={(e) => setBlockedModels(e.target.value)}
-            placeholder="Comma separated: claude-3-opus, gpt-4 (Leave empty for none)"
-          />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">data_usage</span>
+            Quota & Limits
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="Max Tokens Quota"
+              type="number"
+              min="0"
+              value={maxTokens}
+              onChange={(e) => setMaxTokens(e.target.value)}
+              placeholder="Unlimited (Default)"
+              hint="Leave empty for unlimited tokens"
+            />
+            <Input
+              label="Max Cost ($ USD)"
+              type="number"
+              step="0.01"
+              min="0"
+              value={maxCost}
+              onChange={(e) => setMaxCost(e.target.value)}
+              placeholder="Unlimited (Default)"
+              hint="Leave empty for unlimited cost"
+            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-text-main">
+                Quota Reset Cycle
+              </label>
+              <div className="relative">
+                <select
+                  value={resetPeriod}
+                  onChange={(e) => setResetPeriod(e.target.value)}
+                  className="w-full py-2 px-3 pr-10 text-sm font-medium text-text-main bg-surface border-2 border-border rounded shadow-[2px_2px_0px_var(--color-border)] appearance-none focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_var(--color-primary)] focus:border-brand-500 transition-all duration-100 text-[16px] sm:text-sm"
+                >
+                  <option value="none">No Reset (Lifetime Total)</option>
+                  <option value="daily">Daily Reset (Midnight)</option>
+                  <option value="monthly">Monthly Reset (1st of month)</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-text-main font-bold">
+                  <span className="material-symbols-outlined text-[20px]">expand_more</span>
+                </div>
+              </div>
+              <p className="text-xs text-text-muted">Cycle to reset token/cost counts</p>
+            </div>
+          </div>
         </div>
 
-        {/* Allowed Endpoints / Modality */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-            Allowed Endpoints / Modality
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {[
-              { key: "chat", label: "Chat / Text" },
-              { key: "embeddings", label: "Embeddings" },
-              { key: "images", label: "Images" },
-              { key: "audio", label: "Audio / TTS" },
-              { key: "fetch", label: "Web Fetch" },
-            ].map((ep) => (
-              <label
-                key={ep.key}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium cursor-pointer transition-all ${
-                  allowedEndpoints[ep.key]
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-bg-subtle text-text-muted opacity-60"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  className="hidden"
-                  checked={allowedEndpoints[ep.key]}
-                  onChange={(e) =>
-                    setAllowedEndpoints((prev) => ({
-                      ...prev,
-                      [ep.key]: e.target.checked,
-                    }))
-                  }
-                />
-                <span className="material-symbols-outlined text-[16px]">
-                  {allowedEndpoints[ep.key] ? "check_box" : "check_box_outline_blank"}
-                </span>
-                {ep.label}
+        {/* Section: Request Controls */}
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">tune</span>
+            Request & Multiplier Controls
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Token Multiplier (Billing Markup)"
+              type="number"
+              step="0.1"
+              min="0"
+              value={multiplier}
+              onChange={(e) => setMultiplier(e.target.value)}
+              placeholder="1.0"
+              hint="e.g. 1.5 = 1.5x usage recorded in analytics"
+            />
+            <Input
+              label="Max Output Tokens / Request"
+              type="number"
+              min="0"
+              value={maxTokensPerRequest}
+              onChange={(e) => setMaxTokensPerRequest(e.target.value)}
+              placeholder="e.g. 4096 (Empty = Uncapped)"
+              hint="Caps the max_tokens per individual request"
+            />
+          </div>
+        </div>
+
+        {/* Section: Rate Limiting & Expiry */}
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">speed</span>
+            Rate Limiting & Expiration
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="Rate Limit (RPM)"
+              type="number"
+              min="0"
+              value={rateLimitRpm}
+              onChange={(e) => setRateLimitRpm(e.target.value)}
+              placeholder="Unlimited (Default)"
+              hint="Max requests per minute"
+            />
+            <Input
+              label="Rate Limit (TPM)"
+              type="number"
+              min="0"
+              value={rateLimitTpm}
+              onChange={(e) => setRateLimitTpm(e.target.value)}
+              placeholder="Unlimited (Default)"
+              hint="Max tokens per minute"
+            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-text-main">
+                Expiration Date
               </label>
-            ))}
+              <input
+                type="datetime-local"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full py-2 px-3 text-sm font-medium text-text-main bg-surface rounded border-2 border-border shadow-[2px_2px_0px_var(--color-border)] focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_var(--color-primary)] focus:border-brand-500 transition-all duration-100 ease-out text-[16px] sm:text-sm"
+              />
+              <p className="text-xs text-text-muted">Key stops working after this time</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Section: Model Restrictions */}
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">lock</span>
+            Model Restrictions
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Allowed Models (Whitelist)"
+              value={allowedModels}
+              onChange={(e) => setAllowedModels(e.target.value)}
+              placeholder="ag/gemini-*, qd/claude-3-5-sonnet"
+              hint="Comma separated. Leave empty for all models"
+            />
+            <Input
+              label="Blocked Models (Blacklist)"
+              value={blockedModels}
+              onChange={(e) => setBlockedModels(e.target.value)}
+              placeholder="claude-3-opus, gpt-4"
+              hint="Comma separated. Leave empty for none"
+            />
+          </div>
+        </div>
+
+        {/* Section: Allowed Endpoints / Modality */}
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">hub</span>
+            Allowed Endpoints / Modality
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+            {[
+              { key: "chat", label: "Chat / Text", icon: "chat" },
+              { key: "embeddings", label: "Embeddings", icon: "scatter_plot" },
+              { key: "images", label: "Images", icon: "image" },
+              { key: "audio", label: "Audio / TTS", icon: "volume_up" },
+              { key: "fetch", label: "Web Fetch", icon: "language" },
+            ].map((ep) => {
+              const checked = allowedEndpoints[ep.key];
+              return (
+                <label
+                  key={ep.key}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded border-2 cursor-pointer select-none transition-all duration-100 ${
+                    checked
+                      ? "border-primary bg-primary/10 text-primary font-bold shadow-[2px_2px_0px_var(--color-primary)]"
+                      : "border-border bg-surface text-text-muted opacity-70 hover:opacity-100 shadow-[1px_1px_0px_var(--color-border)]"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={checked}
+                    onChange={(e) =>
+                      setAllowedEndpoints((prev) => ({
+                        ...prev,
+                        [ep.key]: e.target.checked,
+                      }))
+                    }
+                  />
+                  <span className="material-symbols-outlined text-[18px]">
+                    {checked ? "check_box" : "check_box_outline_blank"}
+                  </span>
+                  <span className="text-xs truncate">{ep.label}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 justify-end pt-3 border-t border-border">
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
+        <div className="flex flex-col-reverse sm:flex-row gap-2.5 justify-end pt-4 mt-2 border-t-2 border-border">
+          <Button variant="ghost" onClick={onClose} disabled={saving} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
             {saving ? "Saving..." : "Save Settings"}
           </Button>
         </div>
