@@ -69,8 +69,9 @@ export async function handleChat(request, clientRawRequest = null) {
 
   // Enforce API key if enabled in settings OR governance checks
   const settings = await getSettings();
+  const isDashboardRequest = request.nextUrl?.pathname?.startsWith("/api/dashboard/");
   let apiKeyObj = null;
-  if (settings.requireApiKey || apiKey) {
+  if (!isDashboardRequest && (settings.requireApiKey || apiKey)) {
     if (!apiKey && settings.requireApiKey) {
       log.warn("AUTH", "Missing API key (requireApiKey=true)");
       return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Missing API key");

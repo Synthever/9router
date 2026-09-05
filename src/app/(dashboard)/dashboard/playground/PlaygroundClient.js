@@ -155,7 +155,7 @@ export default function PlaygroundClient() {
         payloadMessages.push({ role: m.role, content: m.content });
       }
 
-      const res = await fetch("/api/v1/chat/completions", {
+      const res = await fetch("/api/dashboard/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
