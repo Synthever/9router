@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { marked } from "marked";
-import { Card, Button, Badge } from "@/shared/components";
+import { Card, Button, Badge, ModelSelectModal } from "@/shared/components";
 import { cn } from "@/shared/utils/cn";
 
 // Configure marked safely
@@ -31,24 +31,34 @@ const STARTER_PROMPTS = [
   },
 ];
 
+const PRESET_SYSTEM_PROMPTS = [
+  { label: "Default", prompt: "You are a helpful, expert AI assistant." },
+  { label: "Senior Dev", prompt: "You are a senior full-stack software engineer. Provide clean, modular, production-ready code with minimal fluff." },
+  { label: "JSON Mode", prompt: "You are a specialized data extractor. Always respond with raw, valid JSON only without markdown formatting." },
+  { label: "Concise", prompt: "Be extremely concise, direct, and avoid polite conversational filler. Answer directly with bullet points or code." },
+];
+
 export default function PlaygroundClient() {
   const [models, setModels] = useState([]);
-  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedModel, setSelectedModel] = useState("ag/gemini-3.7-flash-high");
   const [selectedProvider, setSelectedProvider] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("You are a helpful, expert AI assistant.");
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(4096);
   const [stream, setStream] = useState(true);
-  const [thinkingEnabled, setThinkingEnabled] = useState(true);
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [codeLanguage, setCodeLanguage] = useState("curl");
+
+  const [activeProviders, setActiveProviders] = useState([]);
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -63,31 +73,43 @@ export default function PlaygroundClient() {
     scrollToBottom();
   }, [messages, isStreaming]);
 
-  // Load available models
+  // Load models and active providers
   useEffect(() => {
-    async function loadModels() {
+    async function loadInitialData() {
       try {
-        const res = await fetch("/api/v1/models");
-        if (res.ok) {
-          const json = await res.json();
+        const [modelsRes, provRes] = await Promise.all([
+          fetch("/api/v1/models"),
+          fetch("/api/providers").catch(() => null),
+        ]);
+
+        if (modelsRes.ok) {
+          const json = await modelsRes.json();
           const list = Array.isArray(json.data) ? json.data : [];
           setModels(list);
-          if (list.length > 0) {
+          if (list.length > 0 && !selectedModel) {
             setSelectedModel(list[0].id);
             setSelectedProvider(list[0].owned_by || "9router");
           }
+        }
+
+        if (provRes && provRes.ok) {
+          const provJson = await provRes.json();
+          setActiveProviders(provJson.connections || []);
         }
       } catch (e) {
         console.error("Failed to load models for playground:", e);
       }
     }
-    loadModels();
+    loadInitialData();
   }, []);
 
-  const handleModelChange = (modelId) => {
-    setSelectedModel(modelId);
-    const m = models.find((item) => item.id === modelId);
-    if (m) setSelectedProvider(m.owned_by || "9router");
+  const handleSelectModelFromModal = (m) => {
+    const val = m?.value || m?.id;
+    if (val) {
+      setSelectedModel(val);
+      setSelectedProvider(m.provider || m.owned_by || "9router");
+    }
+    setModelPickerOpen(false);
   };
 
   // Send message
@@ -335,45 +357,49 @@ main();`;
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-110px)] min-h-[500px] gap-4 min-w-0">
+    <div className="flex flex-col h-[calc(100vh-105px)] min-h-[500px] gap-3 sm:gap-4 min-w-0 relative">
       {/* Top Controls Toolbar */}
-      <Card className="p-3 sm:p-4 border-2 border-border shadow-[3px_3px_0px_var(--color-border)] flex flex-wrap items-center justify-between gap-3 shrink-0">
-        <div className="flex flex-wrap items-center gap-3 min-w-0 flex-1">
-          {/* Model Selector */}
-          <div className="relative min-w-[200px] sm:min-w-[280px]">
-            <select
-              value={selectedModel}
-              onChange={(e) => handleModelChange(e.target.value)}
-              className={cn(
-                "w-full py-1.5 px-3 pr-8 text-xs sm:text-sm font-bold text-text-main bg-surface rounded",
-                "border-2 border-border shadow-[2px_2px_0px_var(--color-border)] appearance-none",
-                "focus:outline-none focus:border-brand-500 transition-all cursor-pointer font-mono"
-              )}
-            >
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.id} {m.owned_by ? `(${m.owned_by})` : ""}
-                </option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-text-main">
-              <span className="material-symbols-outlined text-[18px]">expand_more</span>
-            </div>
-          </div>
+      <Card className="p-3 sm:p-4 border-2 border-border shadow-[3px_3px_0px_var(--color-border)] flex items-center justify-between gap-2 shrink-0">
+        {/* Model Picker Trigger Button */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => setModelPickerOpen(true)}
+            className={cn(
+              "flex items-center gap-2 py-1.5 px-3 rounded border-2 border-border bg-surface text-left transition-all",
+              "shadow-[2px_2px_0px_var(--color-border)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_var(--color-primary)]",
+              "max-w-full truncate group cursor-pointer"
+            )}
+            title="Click to select model"
+          >
+            <span className="material-symbols-outlined text-[18px] text-brand-500 shrink-0">smart_toy</span>
+            <span className="font-mono text-xs sm:text-sm font-bold text-text-main truncate">
+              {selectedModel || "Select Model..."}
+            </span>
+            <span className="material-symbols-outlined text-[18px] text-text-muted shrink-0 ml-auto">
+              unfold_more
+            </span>
+          </button>
 
-          <Badge variant="outline" size="sm" className="hidden sm:inline-flex font-mono">
-            {selectedProvider}
-          </Badge>
+          {selectedProvider && (
+            <Badge variant="outline" size="sm" className="hidden md:inline-flex font-mono shrink-0">
+              {selectedProvider}
+            </Badge>
+          )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
             icon="tune"
             onClick={() => setSettingsOpen(!settingsOpen)}
-            className={settingsOpen ? "bg-surface-2 border-brand-500" : ""}
+            className={cn(
+              "p-2 sm:px-3",
+              settingsOpen ? "bg-brand-500 text-white border-border" : ""
+            )}
+            title="Playground Parameters"
           >
             <span className="hidden sm:inline">Settings</span>
           </Button>
@@ -382,8 +408,10 @@ main();`;
             size="sm"
             icon="code"
             onClick={() => setExportModalOpen(true)}
+            className="p-2 sm:px-3"
+            title="Export API Code"
           >
-            <span className="hidden sm:inline">Export Code</span>
+            <span className="hidden sm:inline">Code</span>
           </Button>
           {messages.length > 0 && (
             <Button
@@ -392,6 +420,7 @@ main();`;
               icon="delete_sweep"
               onClick={handleClear}
               disabled={isStreaming}
+              className="p-2 sm:px-3 text-red-500 hover:bg-red-500/10"
               title="Clear chat"
             >
               <span className="hidden sm:inline">Clear</span>
@@ -401,16 +430,16 @@ main();`;
       </Card>
 
       {/* Main Studio Area */}
-      <div className="flex-1 flex gap-4 min-h-0 min-w-0">
+      <div className="flex-1 flex gap-4 min-h-0 min-w-0 relative">
         {/* Chat Conversation Viewport */}
         <Card
           padding="none"
           className="flex-1 flex flex-col border-2 border-border shadow-[3px_3px_0px_var(--color-border)] overflow-hidden bg-surface min-w-0"
         >
           {/* Messages Stream Container */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar min-w-0">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar min-w-0">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto py-12">
+              <div className="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto py-8 sm:py-12 px-2">
                 <div className="size-12 rounded bg-brand-500/10 text-brand-500 flex items-center justify-center mb-4 border-2 border-border shadow-[2px_2px_0px_var(--color-border)]">
                   <span className="material-symbols-outlined text-2xl">sports_esports</span>
                 </div>
@@ -422,13 +451,13 @@ main();`;
                 </p>
 
                 {/* Starter Prompts */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 w-full">
                   {STARTER_PROMPTS.map((item, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSend(item.prompt)}
                       className={cn(
-                        "p-3 rounded border-2 border-border bg-surface text-left transition-all",
+                        "p-3 rounded border-2 border-border bg-surface text-left transition-all cursor-pointer",
                         "shadow-[2px_2px_0px_var(--color-border)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_var(--color-primary)]",
                         "flex flex-col gap-1 group"
                       )}
@@ -447,12 +476,12 @@ main();`;
                 <div
                   key={msg.id}
                   className={cn(
-                    "flex flex-col gap-2 min-w-0",
+                    "flex flex-col gap-1.5 min-w-0 max-w-full",
                     msg.role === "user" ? "items-end" : "items-start"
                   )}
                 >
                   {/* Sender Header */}
-                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-text-muted px-1">
+                  <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-text-muted px-1">
                     <span>{msg.role === "user" ? "You" : msg.model || selectedModel}</span>
                     <span>•</span>
                     <span>{new Date(msg.timestamp).toLocaleTimeString()}</span>
@@ -474,7 +503,7 @@ main();`;
                   {/* Message Bubble */}
                   <div
                     className={cn(
-                      "p-3.5 sm:p-4 rounded border-2 border-border text-xs sm:text-sm max-w-full sm:max-w-2xl min-w-0 shadow-[2px_2px_0px_var(--color-border)]",
+                      "p-3 sm:p-4 rounded border-2 border-border text-xs sm:text-sm max-w-full sm:max-w-2xl min-w-0 shadow-[2px_2px_0px_var(--color-border)]",
                       msg.role === "user"
                         ? "bg-brand-500 text-white font-medium"
                         : "bg-surface text-text-main"
@@ -498,7 +527,7 @@ main();`;
           </div>
 
           {/* Composer Input Bar */}
-          <div className="p-3 sm:p-4 border-t-2 border-border bg-surface-2 shrink-0">
+          <div className="p-2.5 sm:p-4 border-t-2 border-border bg-surface-2 shrink-0">
             <div className="relative flex flex-col gap-2">
               <textarea
                 ref={textareaRef}
@@ -514,7 +543,7 @@ main();`;
                 rows={2}
                 disabled={isStreaming}
                 className={cn(
-                  "w-full py-2.5 px-3 pr-24 text-xs sm:text-sm font-medium text-text-main bg-surface rounded",
+                  "w-full py-2 px-3 text-xs sm:text-sm font-medium text-text-main bg-surface rounded",
                   "border-2 border-border shadow-[2px_2px_0px_var(--color-border)] placeholder-text-muted/70 resize-none",
                   "focus:outline-none focus:translate-x-[-1px] focus:translate-y-[-1px] focus:shadow-[3px_3px_0px_var(--color-primary)] focus:border-brand-500",
                   "transition-all duration-100 ease-out"
@@ -522,17 +551,17 @@ main();`;
               />
 
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-xs text-text-muted">
-                  <span className="font-mono text-[11px]">{selectedModel}</span>
+                <div className="flex items-center gap-2 text-xs text-text-muted min-w-0 truncate">
+                  <span className="font-mono text-[10px] sm:text-[11px] truncate">{selectedModel}</span>
                   {isStreaming && (
-                    <span className="flex items-center gap-1 text-brand-500 font-bold animate-pulse">
+                    <span className="flex items-center gap-1 text-brand-500 font-bold animate-pulse shrink-0">
                       <span className="size-1.5 rounded-full bg-brand-500" />
                       Streaming...
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   {isStreaming ? (
                     <Button
                       variant="outline"
@@ -560,91 +589,151 @@ main();`;
           </div>
         </Card>
 
-        {/* Side Settings Drawer/Panel */}
+        {/* Side Settings Drawer/Panel — Modal Overlay on Mobile, Sidebar on Desktop */}
         {settingsOpen && (
-          <Card className="w-72 border-2 border-border shadow-[3px_3px_0px_var(--color-border)] p-4 flex flex-col gap-5 shrink-0 overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between pb-2 border-b border-border/50">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-text-main flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px]">tune</span>
-                Parameters
-              </h4>
-              <button
-                onClick={() => setSettingsOpen(false)}
-                className="p-1 rounded text-text-muted hover:text-text-main"
-              >
-                <span className="material-symbols-outlined text-[16px]">close</span>
-              </button>
-            </div>
+          <>
+            {/* Mobile Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-xs"
+              onClick={() => setSettingsOpen(false)}
+            />
 
-            {/* System Prompt */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-text-main">
-                System Prompt
-              </label>
-              <textarea
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                rows={3}
-                className="w-full py-1.5 px-2.5 text-xs text-text-main bg-surface rounded border-2 border-border shadow-[1px_1px_0px_var(--color-border)] focus:outline-none focus:border-brand-500 resize-none"
-              />
-            </div>
-
-            {/* Temperature Slider */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-wider">
-                <span className="text-text-main">Temperature</span>
-                <span className="font-mono text-brand-500">{temperature}</span>
+            <Card
+              className={cn(
+                "border-2 border-border shadow-[4px_4px_0px_var(--color-border)] p-4 sm:p-5 flex flex-col gap-4 bg-surface z-50 overflow-y-auto custom-scrollbar",
+                "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-sm max-h-[85vh] rounded-lg",
+                "lg:relative lg:top-auto lg:left-auto lg:translate-x-0 lg:translate-y-0 lg:w-80 lg:max-h-full lg:rounded lg:z-10 lg:shrink-0"
+              )}
+            >
+              <div className="flex items-center justify-between pb-2 border-b-2 border-border">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-text-main flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-brand-500">tune</span>
+                  Playground Parameters
+                </h4>
+                <button
+                  onClick={() => setSettingsOpen(false)}
+                  className="p-1 rounded border-2 border-border bg-surface text-text-muted hover:bg-brand-500 hover:text-white transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">close</span>
+                </button>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="2"
-                step="0.1"
-                value={temperature}
-                onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                className="w-full cursor-pointer accent-brand-500"
-              />
-              <div className="flex justify-between text-[10px] text-text-muted">
-                <span>Precise</span>
-                <span>Creative</span>
-              </div>
-            </div>
 
-            {/* Max Tokens */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-wider">
-                <span className="text-text-main">Max Tokens</span>
-                <span className="font-mono text-brand-500">{maxTokens}</span>
+              {/* System Prompt & Presets */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-main">
+                    System Prompt
+                  </label>
+                </div>
+                {/* Presets Chips */}
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {PRESET_SYSTEM_PROMPTS.map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSystemPrompt(p.prompt)}
+                      className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded border transition-colors cursor-pointer",
+                        systemPrompt === p.prompt
+                          ? "bg-brand-500 text-white border-border"
+                          : "bg-surface-2 text-text-muted hover:text-text-main border-border/50"
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  rows={3}
+                  className="w-full py-1.5 px-2.5 text-xs text-text-main bg-surface rounded border-2 border-border shadow-[1px_1px_0px_var(--color-border)] focus:outline-none focus:border-brand-500 resize-none"
+                />
               </div>
-              <input
-                type="number"
-                min="256"
-                max="32768"
-                step="256"
-                value={maxTokens}
-                onChange={(e) => setMaxTokens(parseInt(e.target.value, 10))}
-                className="w-full py-1.5 px-2.5 text-xs font-mono text-text-main bg-surface rounded border-2 border-border shadow-[1px_1px_0px_var(--color-border)] focus:outline-none focus:border-brand-500"
-              />
-            </div>
 
-            {/* Streaming Toggle */}
-            <div className="flex items-center justify-between pt-2 border-t border-border/50">
-              <span className="text-xs font-bold text-text-main">Stream Output</span>
-              <input
-                type="checkbox"
-                checked={stream}
-                onChange={(e) => setStream(e.target.checked)}
-                className="size-4 accent-brand-500 cursor-pointer rounded"
-              />
-            </div>
-          </Card>
+              {/* Temperature Slider */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-wider">
+                  <span className="text-text-main">Temperature</span>
+                  <span className="font-mono text-brand-500 font-bold">{temperature}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={temperature}
+                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                  className="w-full cursor-pointer accent-brand-500"
+                />
+                <div className="flex justify-between text-[10px] text-text-muted font-medium">
+                  <span>0.0 (Precise)</span>
+                  <span>1.0 (Balanced)</span>
+                  <span>2.0 (Creative)</span>
+                </div>
+              </div>
+
+              {/* Max Tokens */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-wider">
+                  <span className="text-text-main">Max Tokens</span>
+                  <span className="font-mono text-brand-500 font-bold">{maxTokens}</span>
+                </div>
+                <input
+                  type="number"
+                  min="256"
+                  max="65536"
+                  step="256"
+                  value={maxTokens}
+                  onChange={(e) => setMaxTokens(parseInt(e.target.value, 10) || 4096)}
+                  className="w-full py-1.5 px-2.5 text-xs font-mono text-text-main bg-surface rounded border-2 border-border shadow-[1px_1px_0px_var(--color-border)] focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              {/* Streaming Toggle */}
+              <div className="flex items-center justify-between pt-3 border-t-2 border-border">
+                <div>
+                  <span className="text-xs font-bold text-text-main block">Stream Output</span>
+                  <span className="text-[10px] text-text-muted">Real-time token streaming</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={stream}
+                  onChange={(e) => setStream(e.target.checked)}
+                  className="size-4 accent-brand-500 cursor-pointer rounded"
+                />
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  fullWidth
+                  onClick={() => setSettingsOpen(false)}
+                >
+                  Done
+                </Button>
+              </div>
+            </Card>
+          </>
         )}
       </div>
+
+      {/* Model Select Modal (Standard Rich 9Router Model Picker) */}
+      <ModelSelectModal
+        isOpen={modelPickerOpen}
+        onClose={() => setModelPickerOpen(false)}
+        onSelect={handleSelectModelFromModal}
+        selectedModel={selectedModel}
+        activeProviders={activeProviders}
+        title="Select Playground Model"
+        closeOnSelect={true}
+      />
 
       {/* Code Export Modal */}
       {exportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <Card className="w-full max-w-2xl border-2 border-border shadow-[5px_5px_0px_var(--color-border)] p-5 flex flex-col gap-4 bg-surface max-h-[85vh] overflow-hidden">
+          <Card className="w-full max-w-2xl border-2 border-border shadow-[5px_5px_0px_var(--color-border)] p-4 sm:p-5 flex flex-col gap-4 bg-surface max-h-[85vh] overflow-hidden">
             <div className="flex items-center justify-between border-b-2 border-border pb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-brand-500">terminal</span>
@@ -654,7 +743,7 @@ main();`;
               </div>
               <button
                 onClick={() => setExportModalOpen(false)}
-                className="p-1 rounded text-text-muted hover:text-text-main"
+                className="p-1 rounded border-2 border-border bg-surface text-text-muted hover:bg-brand-500 hover:text-white transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -667,7 +756,7 @@ main();`;
                   key={lang}
                   onClick={() => setCodeLanguage(lang)}
                   className={cn(
-                    "px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-all border-2",
+                    "px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-all border-2 cursor-pointer",
                     codeLanguage === lang
                       ? "bg-brand-500 text-white border-border shadow-[1px_1px_0px_var(--color-border)]"
                       : "bg-surface text-text-muted hover:text-text-main border-transparent"
@@ -679,7 +768,7 @@ main();`;
             </div>
 
             {/* Code Display */}
-            <pre className="flex-1 overflow-auto p-4 rounded border-2 border-border bg-black/5 dark:bg-white/5 font-mono text-xs text-text-main max-h-[45vh] custom-scrollbar">
+            <pre className="flex-1 overflow-auto p-3 sm:p-4 rounded border-2 border-border bg-black/5 dark:bg-white/5 font-mono text-xs text-text-main max-h-[45vh] custom-scrollbar">
               {generateCode(codeLanguage)}
             </pre>
 
