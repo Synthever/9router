@@ -56,18 +56,18 @@ function CollapsibleSection({ title, children, defaultOpen = false, icon = null 
   const [isOpen, setIsOpen] = useState(defaultOpen);
   
   return (
-    <div className="border-2 border-border rounded shadow-[2px_2px_0px_var(--color-border)] overflow-hidden">
+    <div className="border-2 border-border rounded shadow-[2px_2px_0px_var(--color-border)] overflow-hidden min-w-0">
       <button 
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 bg-surface hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
+        className="w-full flex items-center justify-between p-2.5 sm:p-3 bg-surface hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors gap-2"
       >
-        <div className="flex items-center gap-2">
-          {icon && <span className="material-symbols-outlined text-[18px] text-text-muted">{icon}</span>}
-          <span className="font-bold text-xs uppercase tracking-wider text-text-main">{title}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          {icon && <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-text-muted shrink-0">{icon}</span>}
+          <span className="font-bold text-xs uppercase tracking-wider text-text-main truncate text-left">{title}</span>
         </div>
         <span className={cn(
-          "material-symbols-outlined text-[20px] text-text-muted transition-transform duration-200",
+          "material-symbols-outlined text-[18px] sm:text-[20px] text-text-muted transition-transform duration-200 shrink-0",
           isOpen ? "rotate-90" : ""
         )}>
           chevron_right
@@ -75,7 +75,7 @@ function CollapsibleSection({ title, children, defaultOpen = false, icon = null 
       </button>
       
       {isOpen && (
-        <div className="p-4 border-t-2 border-border bg-surface">
+        <div className="p-3 sm:p-4 border-t-2 border-border bg-surface min-w-0 overflow-hidden">
           {children}
         </div>
       )}
@@ -347,63 +347,63 @@ export default function RequestDetailsTab() {
       >
         {selectedDetail && (
           <div className="space-y-6">
-            <div className="grid min-w-0 grid-cols-1 gap-4 text-sm sm:grid-cols-2">
-              <div>
-                <span className="text-text-muted">ID:</span>{" "}
-                <span className="break-all font-mono text-text-main">{selectedDetail.id}</span>
+            <div className="grid min-w-0 grid-cols-1 gap-2.5 sm:gap-4 text-xs sm:text-sm sm:grid-cols-2 p-3 sm:p-4 rounded border-2 border-border bg-black/[0.02] dark:bg-white/[0.02]">
+              <div className="min-w-0">
+                <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Request ID</span>
+                <span className="break-all font-mono text-text-main text-xs">{selectedDetail.id}</span>
               </div>
-              <div>
-                <span className="text-text-muted">Timestamp:</span>{" "}
-                <span className="text-text-main">{new Date(selectedDetail.timestamp).toLocaleString()}</span>
+              <div className="min-w-0">
+                <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Timestamp</span>
+                <span className="text-text-main text-xs">{new Date(selectedDetail.timestamp).toLocaleString()}</span>
               </div>
-              <div>
-                 <span className="text-text-muted">Provider:</span>{" "}
-                 <span className="text-text-main font-medium">{getProviderName(selectedDetail.provider, providerNameCache)}</span>
-               </div>
-              <div>
-                <span className="text-text-muted">Model:</span>{" "}
-                <span className="text-text-main font-mono">{selectedDetail.model}</span>
+              <div className="min-w-0">
+                <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Provider</span>
+                <span className="text-text-main font-bold truncate block">{getProviderName(selectedDetail.provider, providerNameCache)}</span>
               </div>
-              <div>
-                <span className="text-text-muted">Status:</span>{" "}
+              <div className="min-w-0">
+                <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Model</span>
+                <span className="text-text-main font-mono text-xs break-all block">{selectedDetail.model}</span>
+              </div>
+              <div className="min-w-0">
+                <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Status</span>
                 <span className={cn(
-                  "font-medium",
-                  selectedDetail.status === "success" ? "text-green-600" : "text-red-600"
+                  "font-bold uppercase text-xs",
+                  selectedDetail.status === "success" || selectedDetail.status === "ok" ? "text-green-600" : "text-red-600"
                 )}>
                   {selectedDetail.status}
                 </span>
               </div>
-              <div>
-                <span className="text-text-muted">Latency:</span>{" "}
-                <span className="text-text-main font-mono">
+              <div className="min-w-0">
+                <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Latency</span>
+                <span className="text-text-main font-mono text-xs">
                   TTFT {selectedDetail.latency?.ttft || 0}ms / Total {selectedDetail.latency?.total || 0}ms
                 </span>
               </div>
-              <div>
-                <span className="text-text-muted">Input Tokens:</span>{" "}
-                <span className="text-text-main font-mono">
+              <div className="min-w-0">
+                <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Input Tokens</span>
+                <span className="text-text-main font-mono text-xs font-bold">
                   {getInputTokens(selectedDetail.tokens).toLocaleString()}
                 </span>
               </div>
               {getCachedTokens(selectedDetail.tokens) > 0 && (
-                <div>
-                  <span className="text-text-muted">Cached Tokens:</span>{" "}
-                  <span className="text-text-main font-mono">
+                <div className="min-w-0">
+                  <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Cached Tokens</span>
+                  <span className="text-text-main font-mono text-xs">
                     {getCachedTokens(selectedDetail.tokens).toLocaleString()}
                   </span>
                 </div>
               )}
               {getCacheCreationTokens(selectedDetail.tokens) > 0 && (
-                <div>
-                  <span className="text-text-muted">Cache Creation:</span>{" "}
-                  <span className="text-text-main font-mono">
+                <div className="min-w-0">
+                  <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Cache Creation</span>
+                  <span className="text-text-main font-mono text-xs">
                     {getCacheCreationTokens(selectedDetail.tokens).toLocaleString()}
                   </span>
                 </div>
               )}
-              <div>
-                <span className="text-text-muted">Output Tokens:</span>{" "}
-                <span className="text-text-main font-mono">
+              <div className="min-w-0">
+                <span className="text-text-muted block text-[11px] font-bold uppercase tracking-wider">Output Tokens</span>
+                <span className="text-text-main font-mono text-xs font-bold">
                   {selectedDetail.tokens?.completion_tokens?.toLocaleString() || 0}
                 </span>
               </div>
