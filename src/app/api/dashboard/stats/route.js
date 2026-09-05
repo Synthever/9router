@@ -5,6 +5,18 @@ import { getApiKeys } from "@/lib/db/repos/apiKeysRepo";
 import { getProviderConnections } from "@/lib/db/repos/connectionsRepo";
 import { getProviderNodes } from "@/lib/db/repos/nodesRepo";
 import { getCombos } from "@/lib/db/repos/combosRepo";
+import { AI_PROVIDERS, getProviderByAlias } from "@/shared/constants/providers";
+
+function resolveProviderDisplayName(providerId, nodesMap) {
+  if (!providerId) return "Unknown";
+  if (nodesMap[providerId]) return nodesMap[providerId];
+  const p = getProviderByAlias(providerId) || AI_PROVIDERS[providerId];
+  if (p?.name) return p.name;
+  if (providerId.startsWith("openai-compatible-chat-")) {
+    return "Custom OpenAI (" + providerId.slice(23, 29) + ")";
+  }
+  return providerId;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -145,6 +157,11 @@ export async function GET(request) {
       LIMIT 10
     `);
 
+    const nodesMap = {};
+    for (const n of nodes) {
+      if (n.id && n.name) nodesMap[n.id] = n.name;
+    }
+
     return NextResponse.json({
       summary: {
         totalRequests: summary.totalRequests || 0,
@@ -167,14 +184,15 @@ export async function GET(request) {
         combos: combos.length,
       },
       byProvider: providerRows.map(r => ({
-        name: r.provider,
+        name: resolveProviderDisplayName(r.provider, nodesMap),
+        rawProvider: r.provider,
         count: r.count,
         tokens: (r.promptTokens || 0) + (r.completionTokens || 0),
         cost: r.cost || 0,
       })),
       byModel: modelRows.map(r => ({
         name: r.model,
-        provider: r.provider,
+        provider: resolveProviderDisplayName(r.provider, nodesMap),
         count: r.count,
         tokens: (r.promptTokens || 0) + (r.completionTokens || 0),
         cost: r.cost || 0,
@@ -194,7 +212,7 @@ export async function GET(request) {
         return {
           id: r.id,
           timestamp: r.timestamp,
-          provider: r.provider || "unknown",
+          provider: resolveProviderDisplayName(r.provider, nodesMap),
           model: r.model || "unknown",
           tokens: (r.promptTokens || 0) + (r.completionTokens || 0),
           cachedTokens: t.cached_tokens || t.cache_read_input_tokens || 0,

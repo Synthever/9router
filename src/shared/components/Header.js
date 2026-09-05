@@ -138,10 +138,17 @@ const getPageInfo = (pathname) => {
       icon: "extension",
       breadcrumbs: [],
     };
+  if (pathname === "/dashboard")
+    return {
+      title: "Dashboard",
+      description: "Overview statistics, traffic throughput, and system health",
+      icon: "dashboard",
+      breadcrumbs: [],
+    };
   if (pathname.includes("/endpoint"))
     return {
-      title: "Endpoint",
-      description: "API endpoint configuration",
+      title: "Endpoint & Key",
+      description: "API endpoint configuration and API keys",
       icon: "api",
       breadcrumbs: [],
     };
