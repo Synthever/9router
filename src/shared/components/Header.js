@@ -145,6 +145,13 @@ const getPageInfo = (pathname) => {
       icon: "dashboard",
       breadcrumbs: [],
     };
+  if (pathname.includes("/playground"))
+    return {
+      title: "Model Playground",
+      description: "Interactive real-time inference testing, streaming, and code export",
+      icon: "sports_esports",
+      breadcrumbs: [],
+    };
   if (pathname.includes("/endpoint"))
     return {
       title: "Endpoint & Key",
